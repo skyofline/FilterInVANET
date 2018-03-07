@@ -903,7 +903,7 @@ public class DTNHost implements Comparable<DTNHost> {
 					}
 					System.out.println(datas.size()+this.getName()+"内的数据条数为："+this.filterCube.getNumOfData());
 					//rsu获取数据后回复至云端处理数据来回复等待数据的消息
-					Cloud.getInstance().workOnWaitMessage((List<Data>) datas.get(0));
+					Cloud.getInstance().workOnWaitMessage(datas);
 				}
 				
 				
