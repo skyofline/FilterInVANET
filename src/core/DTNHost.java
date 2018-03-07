@@ -207,7 +207,6 @@ public class DTNHost implements Comparable<DTNHost> {
     	d.fillData();
     	//当数据产生后，可将数据加入到filter cube中
     	this.filterCube.putData(d,this);   
-    	this.uploadDataToEdge(d);
     }
 	public Data collectDataForRequest(Request r){
 		String content=null;
@@ -664,14 +663,6 @@ public class DTNHost implements Comparable<DTNHost> {
 				this.filterCube.update();
 			}
 		}
-//		if(this.time % 1800==1){//更新filter
-//			//throw new SimError("RSU更新数据和filter时间");
-//			//更新filter的阈值
-//			if(this.type==1){
-//				this.filterCube.update();
-//			}
-//			
-//		}
 	}
 
 	/**
@@ -1343,7 +1334,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	public Request createNewRequest(){
 		Random r=new Random(System.currentTimeMillis());
 //		int type=r.nextInt(5);
-		int type=0;
+		int type=1;
 		int level=r.nextInt(2);
 		Coord c=Cloud.getInstance().getRandLocation();
 		double time=SimClock.getTime();
