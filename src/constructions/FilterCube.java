@@ -613,7 +613,7 @@ public class FilterCube {
     				if(this.fc.get(k).getStatus()==0) numOfOpen++;
     				else numOfClose++;
     		}
-    		if(numOfOpen<numOfClose) sum=sum+numOfClose;
+    		if(numOfOpen>numOfClose) sum=sum+numOfClose;
     		else sum=sum+numOfOpen;
     	}
 		return sum;
