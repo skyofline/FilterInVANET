@@ -381,9 +381,12 @@ public class FilterCube {
     			for(Data t:s){
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
-    					this.fc.get(k).getFilters().get(0).resetDataStatus(t);
-    					if(t.getExpandState()==1){
-    						t.setExpandState(0);
+    					int sign=0;//在此处用于标记是否该数据是否是传播状态
+    					if(t.getExpandState()==1) sign=1;
+    					f.resetDataStatus(t);
+    					if(t.getUsageCount()==1) f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    					if(t.getExpandState()==1&&sign==0){
+    					
     						if(dtn.getType()==0) dtn.uploadDataToEdge(t);
     						else if(dtn.getType()==1) dtn.uploadDataToCloud(t);
     					}
@@ -461,23 +464,85 @@ public class FilterCube {
 	 * 并根据需要进行传播
 	 */
 	public List<Data> answerRequest(Request r,Cloud dtn){
+		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
+		List<Keys> delKeys =new ArrayList<Keys>();
 		List<Data> res=new ArrayList<Data>();
 		Set<Keys> ks=this.fc.keySet();
     	for(Keys k:ks){
-    		if(this.fc.get(k).getFilters().get(0).judgeRequest(r)){
+    		Values v=this.fc.get(k);
+    		Filter f=this.fc.get(k).getFilters().get(0);
+    		if(f.judgeRequest(r)){
     			List<Data> s=this.fc.get(k).getDatas();
     			for(Data t:s){
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
-    					this.fc.get(k).getFilters().get(0).resetDataStatus(t);
-    					if(t.getExpandState()==1){
-    						t.setExpandState(0);
-    						
-    					}
+    					
+    					f.resetDataStatus(t);
+    					if(t.getUsageCount()==1) f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
     					res.add(t);
     				}
     			}
+    			//如果该filter是一个basic filter，则要判断是否还在考察时间内
+    			if(f.getBasicStatus()==1){
+    				//对basicFilter进行处理
+    				if(Timer.judgeFilter(f, f.getPeriodTime())){
+    					//首先计算avg，用于衡量数据量，以此来表达数据广度
+    					double misDAF=0;
+    					double sum=0;
+    					for(Data d:v.getDatas()){
+    						if(d.getExpandState()!=f.getStatus()) misDAF=misDAF+1;
+    						sum=sum+1;
+    					}
+    					double avg=misDAF/sum;
+    					//计算mismatch factor
+    					double mismatchs=this.calMismatchFactor(v.getDatas());
+    					double er=avg/mismatchs;
+    					if(er>this.getUpdateThreshold2()){
+    						double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
+    						f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
+    						//此时要把basic状态取消
+    						f.setBasicStatus(0);
+    					}else{
+    						//将filter置为more状态，此时没必要，暂不进行操作
+    						int len=f.getDims().size();
+    						double[] min=new double[len];
+    				    	int[] split=new int[len];
+    				    	for(int i=0;i<len;i++){
+    				    		min[i]=1000000;
+    				    		split[i]=1;
+    				    	}
+    				    	for(int i=0;i<len;i++){
+    				    		List<String> l=new ArrayList(f.getDims().keySet());
+    				    		String dim= l.get(i);
+    				    		for(int j=1;j<=this.getMaxSplits(dim);j++){
+    				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
+    				    			if(dimSplitFac<min[i]){
+    				    				min[i]=dimSplitFac;
+    				    				split[i]=j;
+    				    			}
+    				    		}
+    				    		Map<Keys,Values> newss=this.splitDimension(k, dim, split[i]);
+    				    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
+    				    		if(newss!=null){
+    				    			adds.putAll(newss);
+    				    			//将所有原有的keys添加到delKeys，并最终删除掉
+    				    			delKeys.add(k);
+    				    		}
+    				    	}
+    					}
+    				}
+    			}
+    			if(res.size()>0) break;
     		}
+    	}
+    	//删除被切分的分片和添加分出的分片
+    	if(delKeys.size()>0){
+    		for(Keys kk:delKeys){
+    			this.fc.remove(kk);
+    		}
+    	}
+    	if(adds.size()>0){
+    		this.fc.putAll(adds);
     	}
 		return res;
 	}

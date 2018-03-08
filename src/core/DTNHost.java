@@ -206,7 +206,8 @@ public class DTNHost implements Comparable<DTNHost> {
     	Data d=new Data(SimClock.getTime(),this.address,type,level,content,this.location);
     	d.fillData();
     	//当数据产生后，可将数据加入到filter cube中
-    	this.filterCube.putData(d,this);   
+    	this.filterCube.putData(d,this); 
+    	this.uploadDataToEdge(d);
     }
 	public Data collectDataForRequest(Request r){
 		String content=null;
@@ -662,6 +663,10 @@ public class DTNHost implements Comparable<DTNHost> {
 				this.oldUpdateTime=SimClock.getTime();
 				this.filterCube.update();
 			}
+		}
+		if(SimClock.getTime()-this.oldUpdateTime>3600){
+			this.oldUpdateTime=SimClock.getTime();
+			this.filterCube.update();
 		}
 	}
 

@@ -89,14 +89,12 @@ public class Filter {
 		else if(this.calRadioCost(datas,requests)>1) this.setStatus(0);
 		else this.setStatus(1);
 	}
-	//根据数据使用情况以及filter的开闭评估数据的可否传播情况，至少数据
-	//在十分钟内被查询25次才有传播价值
+	//根据filter的开闭评估数据的可否传播情况
 	public void resetDataStatus(Data d){
 		
 		if(this.getStatus()==0)d.setExpandState(0);
 		else {
-			if(this.getUsedWithTime(d)>25/600) d.setExpandState(1);
-			else d.setExpandState(0);
+			d.setExpandState(1);
 		}
 	}
 	//计算数据的被使用次数和时间的长度比来判断该数据的可用可信程度
@@ -178,16 +176,11 @@ public class Filter {
 		double res= this.dataMatchRatio(datas,requests)+(this.reqTransmFactor/this.dataTransmFactor)*this.requestToDataRatio(datas,requests);
 		return res;
 	}
-	//计算某个filter中的data match ratio
+	//计算某个filter中的data match ratio,根据数据的使用次数判断
 	public double dataMatchRatio(List<Data> datas,List<Request> requests){
 		int num=0;
 		for(Data d:datas){
-			for(Request r:requests){
-				if(r.judgeData(d)){
-					num++;
-					break;
-				}
-			}
+			if(d.getUsageCount()>0) num++;
 		}
 		return (double)num/datas.size();
 	}
