@@ -157,14 +157,13 @@ public class DTNHost implements Comparable<DTNHost> {
     					split[i]=j;
     				}
 	    		}
-//	    		System.out.println(split[i]);
     			Map<Keys,Values> newMap=this.filterCube.splitDimension(k, dim, split[i]);
-    			if(newMap!=null){
+    			if(newMap!=null&&newMap.size()>1){
     				addKV.putAll(newMap);
     			}
     		}
     	}
-    	if(orginKey!=null&&addKV!=null){
+    	if(orginKey!=null&&addKV.size()>1){
     		this.filterCube.getFc().remove(orginKey);
     		this.filterCube.getFc().putAll(addKV);
     	}
@@ -322,7 +321,6 @@ public class DTNHost implements Comparable<DTNHost> {
 				}
 			}
 		}
-		
 		System.out.println(this.getName()+"已经完全建立");
 		
 	}

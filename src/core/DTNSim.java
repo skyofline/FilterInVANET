@@ -76,77 +76,7 @@ public class DTNSim {
 	      }
 	    tracks=trackss;
 	}
-//	//用于存储从外部数据od数据集读取的测试数据
-//	public static Map<Integer,List<BasicRequest>> m=new LinkedHashMap<Integer,List<BasicRequest>>();
-//	public static void getDataFromOD(){
-//		try{
-//			File f=new File("C:\\Users\\19836\\Desktop\\毕设资料\\OD数据\\test.txt");
-//			BufferedReader bufReader;
-//			String read;
-//			bufReader=new BufferedReader(new FileReader(f));
-//			while((read=bufReader.readLine())!=null){
-//				String[] items=read.split(",");
-//				int id=Integer.parseInt(items[0]);
-//				if(!m.containsKey(id)){
-//					List<BasicRequest> lb=new ArrayList<BasicRequest>();
-//					BasicRequest br=new BasicRequest(id,Double.parseDouble(items[1])
-//							,Double.parseDouble(items[2]),Double.parseDouble(items[3])
-//							,Double.parseDouble(items[4]),Double.parseDouble(items[5])
-//							,Double.parseDouble(items[5]));
-//					lb.add(br);
-//					m.put(id, lb);
-//				}else{
-//					BasicRequest br=new BasicRequest(id,Double.parseDouble(items[1])
-//							,Double.parseDouble(items[2]),Double.parseDouble(items[3])
-//							,Double.parseDouble(items[4]),Double.parseDouble(items[5])
-//							,Double.parseDouble(items[5]));
-//					List<BasicRequest> lb=m.get(id);
-//					lb.add(br);
-//					m.replace(id, lb);
-//				}
-//			}
-//			bufReader.close();
-//		}catch(FileNotFoundException e){
-//			e.printStackTrace();
-//		}catch(IOException e){
-//			e.printStackTrace();
-//		}
-//	}
-//	//用于存储外部数据集od数据集的终点分布情况
-//	public static double plaDisCounts=249216.0;
-//	public static int[][] plaDistri;
-//	public static void getPlacesDistribute() throws IOException{
-//		File f=new File("C:\\Users\\19836\\Desktop\\毕设资料\\OD数据\\odExch.txt");
-//		BufferedReader bufread;
-//		String read;
-//		bufread=new BufferedReader(new FileReader(f));
-//		int[][] num=new int[10][10];
-//		for(int i=0;i<10;i++)
-//			for (int j=0;j<10;j++)
-//				num[i][j]=0;
-//		double minX=1.1669846680015326;
-//		double minY=0.8009045347571373;
-//		double maxX=1.1975577154722363E7;
-//		double maxY=2.497099654427073E7;
-//		double sizeX=(maxX-minX)/10;
-//		double sizeY=(maxY-minY)/10;
-//		while((read=bufread.readLine())!=null){
-//			String[] items=read.split(",");
-//			double a=Double.parseDouble(items[1]);
-//			double b=Double.parseDouble(items[2]);
-//			double c=Double.parseDouble(items[3]);
-//			double d=Double.parseDouble(items[4]);
-//			double ix=(c-minX)/sizeX;
-//			double iy=(d-minY)/sizeY;
-//			int i=(int)ix;
-//			int j=(int)iy;
-//			if(i>9) i=9;
-//			if(j>9) j=9;
-//			num[i][j]++;
-//		}
-//		bufread.close();
-//		plaDistri=num;
-//	}
+
 	/**
 	 * Starts the user interface with given arguments.
 	 * If first argument is {@link #BATCH_MODE_FLAG}, the batch mode and text UI

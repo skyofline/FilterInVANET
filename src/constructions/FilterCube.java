@@ -8,12 +8,10 @@ import core.Cloud;
 import core.DTNHost;
 import core.MessageCenter;
 import core.SimClock;
-import core.SimScenario;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 
 public class FilterCube {
 	/*
@@ -22,8 +20,7 @@ public class FilterCube {
 	
 	
 	private Map<Keys,Values> fc=new LinkedHashMap<Keys,Values>();
-	//用在filter cube更新时储存生成的基本filter
-	private List<Filter> basicFilter=new ArrayList<Filter>();
+
 	public FilterCube(){
 		
 	}
@@ -53,7 +50,7 @@ public class FilterCube {
 	 */
     public void putData(Data d,DTNHost dtn){
   		Set<Keys> ks=this.fc.keySet();
-  		if(ks.size()==0) System.out.println("Filter cube 未建立，需要重启或修正bug");
+  		if(ks.size()==0) System.out.println(dtn.getName()+"Filter cube 未建立，需要重启或修正bug");
 //    	System.out.println(dtn.getName()+"中的filter cube的层级数："+ks.size());
 //  		System.out.println(d.toString());
     	int i=0;
@@ -103,7 +100,7 @@ public class FilterCube {
 	 */
     public void putDataForCloud(Data d){
   		Set<Keys> ks=this.fc.keySet();
-  		if(ks.size()==0) System.out.println("Filter cube 未建立，需要重启或修正bug");
+  		if(ks.size()==0) System.out.println("Cloud Filter cube 未建立，需要重启或修正bug");
     	int i=0;
   		for(Keys k:ks){
     		
@@ -142,7 +139,6 @@ public class FilterCube {
 	 * 向filter cube中添加request
 	 */
 	public void putRequest(Request r){
-		@SuppressWarnings({ "unused", "unchecked" })
 		Set<Keys> ks=this.fc.keySet();
     	for(Keys k:ks){
     		
@@ -157,9 +153,8 @@ public class FilterCube {
 	public void update(){
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
-		List<Filter> lbasicFilter=new ArrayList<Filter>();
 		Set<Keys> k=this.fc.keySet();
-		Iterator it=k.iterator();
+		Iterator<Keys> it=k.iterator();
 		while(it.hasNext()){
 			Keys nk=(Keys) it.next();
 			Values v=this.fc.get(nk);
@@ -168,7 +163,7 @@ public class FilterCube {
 			if(f.getBasicStatus()==0){
 				double mf=f.getMistakeFactor(v.getDatas());
 				if(mf<this.getUpdateThreshold1()){
-					double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
+//					double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
 					f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
 				}else{
 //					FilterCube newFilterCube=new FilterCube();
@@ -193,7 +188,6 @@ public class FilterCube {
 					double mismatchs=this.calMismatchFactor(v.getDatas());
 					double er=avg/mismatchs;
 					if(er>this.getUpdateThreshold2()){
-						double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
 						f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
 						//此时要把basic状态取消
 						f.setBasicStatus(0);
@@ -207,9 +201,9 @@ public class FilterCube {
 				    		split[i]=1;
 				    	}
 				    	for(int i=0;i<len;i++){
-				    		List<String> l=new ArrayList(f.getDims().keySet());
+				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
 				    		String dim= l.get(i);
-				    		for(int j=1;j<=this.getMaxSplits(dim);j++){
+				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
 				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
 				    			if(dimSplitFac<min[i]){
 				    				min[i]=dimSplitFac;
@@ -218,7 +212,7 @@ public class FilterCube {
 				    		}
 				    		Map<Keys,Values> newss=this.splitDimension(nk, dim, split[i]);
 				    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
-				    		if(newss!=null){
+				    		if(newss.size()>1){
 				    			adds.putAll(newss);
 				    			//将所有原有的keys添加到delKeys，并最终删除掉
 				    			delKeys.add(nk);
@@ -246,7 +240,7 @@ public class FilterCube {
 	 */
 	public void updateDatas(){
 		Set<Keys>k= this.fc.keySet();
-		Iterator it=k.iterator();
+		Iterator<Keys> it=k.iterator();
 		while(it.hasNext()){
 			Keys nk=(Keys) it.next();
 			Values v=this.fc.get(nk);
@@ -282,7 +276,7 @@ public class FilterCube {
 	 */
 	public void clearDatas(){
 		Set<Keys>k= this.fc.keySet();
-		Iterator it=k.iterator();
+		Iterator<Keys> it=k.iterator();
 		while(it.hasNext()){
 			Keys nk=(Keys) it.next();
 			Values v=this.fc.get(nk);
@@ -409,7 +403,7 @@ public class FilterCube {
     					double mismatchs=this.calMismatchFactor(v.getDatas());
     					double er=avg/mismatchs;
     					if(er>this.getUpdateThreshold2()){
-    						double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
+//    						double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
     						f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
     						//此时要把basic状态取消
     						f.setBasicStatus(0);
@@ -423,9 +417,9 @@ public class FilterCube {
     				    		split[i]=1;
     				    	}
     				    	for(int i=0;i<len;i++){
-    				    		List<String> l=new ArrayList(f.getDims().keySet());
+    				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
     				    		String dim= l.get(i);
-    				    		for(int j=1;j<=this.getMaxSplits(dim);j++){
+    				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
     				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
     				    			if(dimSplitFac<min[i]){
     				    				min[i]=dimSplitFac;
@@ -434,7 +428,7 @@ public class FilterCube {
     				    		}
     				    		Map<Keys,Values> newss=this.splitDimension(k, dim, split[i]);
     				    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
-    				    		if(newss!=null){
+    				    		if(newss.size()>1){
     				    			adds.putAll(newss);
     				    			//将所有原有的keys添加到delKeys，并最终删除掉
     				    			delKeys.add(k);
@@ -498,7 +492,6 @@ public class FilterCube {
     					double mismatchs=this.calMismatchFactor(v.getDatas());
     					double er=avg/mismatchs;
     					if(er>this.getUpdateThreshold2()){
-    						double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
     						f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
     						//此时要把basic状态取消
     						f.setBasicStatus(0);
@@ -512,9 +505,9 @@ public class FilterCube {
     				    		split[i]=1;
     				    	}
     				    	for(int i=0;i<len;i++){
-    				    		List<String> l=new ArrayList(f.getDims().keySet());
+    				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
     				    		String dim= l.get(i);
-    				    		for(int j=1;j<=this.getMaxSplits(dim);j++){
+    				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
     				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
     				    			if(dimSplitFac<min[i]){
     				    				min[i]=dimSplitFac;
@@ -523,7 +516,7 @@ public class FilterCube {
     				    		}
     				    		Map<Keys,Values> newss=this.splitDimension(k, dim, split[i]);
     				    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
-    				    		if(newss!=null){
+    				    		if(newss.size()>1){
     				    			adds.putAll(newss);
     				    			//将所有原有的keys添加到delKeys，并最终删除掉
     				    			delKeys.add(k);
@@ -549,10 +542,9 @@ public class FilterCube {
 	
 	//dimension split
 	public Map<Keys, Values> splitDimension(Keys k,String dimension,int num){
+		Map<Keys,Values> addKV=new LinkedHashMap<>();
 		if(num>1){
-//			System.out.println("正在切分维度"+dimension);
-			Map<Keys,Values> addKV=new LinkedHashMap<>();
-			List<Keys> dels=new ArrayList<>();
+//			List<Keys> del=new ArrayList<>();
 			if(k.getKey().containsKey(dimension)){
 				Values newValues=new Values(this.fc.get(k));
 				//将dimension维度进行切分,平均切分成num个filter
@@ -574,7 +566,8 @@ public class FilterCube {
 			}
 			return addKV;
 		}else{
-			return null;
+			addKV.put(k, this.fc.get(k));
+			return addKV;
 		}
 	}
 	/*
@@ -605,7 +598,7 @@ public class FilterCube {
 		int sum=0;
 		for(int i=0;i<num;i++){
     		int numOfOpen=0,numOfClose=0;
-    		Iterator it=this.fc.keySet().iterator();
+    		Iterator<Keys> it=this.fc.keySet().iterator();
     		while(it.hasNext()){
     			Keys k=(Keys) it.next();
     			if(k.getKey().containsKey(dimension)&&(k.getKey().get(dimension).getMinBord()>=i*aver)
