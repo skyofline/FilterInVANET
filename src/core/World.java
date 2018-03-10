@@ -317,12 +317,19 @@ public class World {
 		res=res+MessageCenter.showReplyRateOfCar()+",";
 		res=res+MessageCenter.showAverTimeOfCar()+",";
 		
-		//最后展示Cloud端
+		//再后展示Cloud端
 		res=res+MessageCenter.showReplyByLocalRateOfCloud()+",";
 		res=res+MessageCenter.showRestSpaceRateOfCloud()+",";
-		res=res+MessageCenter.showAverTimeOfCloud()+",";
+		res=res+MessageCenter.showAverTimeOfCloud()+"\n";
 
-		res=res+"====================="+SimClock.getTime()+"=============================\n";
+		//最后展示一些实验参数,首先重新计算成功查询的比例，然后再依次展示
+		MessageCenter.calReplyRate();
+		res=res+"总的消息量为："+MessageCenter.querys+","+"数据向上推送的数量为："+MessageCenter.pushUpDatas
+				+",数据向下拉取的数量为："+MessageCenter.pullDownDatas
+				+",成功查询的比例为："+MessageCenter.repliedQueryRate
+				+",进行filter cube更新所花费的平均时间为："+MessageCenter.filterCubeUpdateTime/MessageCenter.filterCubeUpdates;
+
+		res=res+"\n====================="+SimClock.getTime()+"=============================\n";
 		return res;
 	}
 }

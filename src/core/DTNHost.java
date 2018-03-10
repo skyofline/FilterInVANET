@@ -230,6 +230,8 @@ public class DTNHost implements Comparable<DTNHost> {
      */
     public void uploadDataToCloud(Data d){
     	Cloud.getInstance().receiveDataFromEdge(d);
+    	//计量数据向上推送数量
+    	MessageCenter.pushUpDatas=MessageCenter.pushUpDatas+1;
     }
     /*
      * 上传数据到edge
@@ -248,6 +250,8 @@ public class DTNHost implements Comparable<DTNHost> {
     			this.createNewMessage(m);
     		}
     	}
+    	//计量数据向上推送数量
+    	MessageCenter.pushUpDatas=MessageCenter.pushUpDatas+1;
     }
     static {
 		DTNSim.registerForReset(DTNHost.class.getCanonicalName());
@@ -655,13 +659,13 @@ public class DTNHost implements Comparable<DTNHost> {
 			System.out.println(this.name+"的存储空间不足，正在删除以往filter和数据中。。。。。。。。");
 			this.filterCube.updateDatas();
 		}
-		if(this.filterCube.getNumOfData()/this.filterCube.getFC().size()>500){
-			System.out.println(this.getName()+"内部正在更新filter cube整体");
-			if(SimClock.getTime()-this.oldUpdateTime>1800){
-				this.oldUpdateTime=SimClock.getTime();
-				this.filterCube.update();
-			}
-		}
+//		if(this.filterCube.getNumOfData()/this.filterCube.getFC().size()>500){
+//			System.out.println(this.getName()+"内部正在更新filter cube整体");
+//			if(SimClock.getTime()-this.oldUpdateTime>1800){
+//				this.oldUpdateTime=SimClock.getTime();
+//				this.filterCube.update();
+//			}
+//		}
 		if(SimClock.getTime()-this.oldUpdateTime>3600){
 			this.oldUpdateTime=SimClock.getTime();
 			this.filterCube.update();
@@ -946,6 +950,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void createNewMessage(Message m) {
 		if(m.getType()==Message.Query_Type){
+			System.out.println("****************************");
 			m.setReceiveQueryTime(SimClock.getTime());
 			//创建一条查询
 			Request q=this.createNewRequest();
@@ -955,8 +960,13 @@ public class DTNHost implements Comparable<DTNHost> {
 			DTNHost news=MessageCenter.getNearestEdge(this);
 			if(news!=null) m.setTo(news);
 			this.addMessageToWaitMessage(m);
+			//添加计量查询数，如果是车辆节点，说明发出的查询是所要计量的
+			if(this.getType()==0) 
+				MessageCenter.querys=MessageCenter.querys+1;
 		}
 		this.router.createNewMessage(m);
+		//消息中心计算消息传输量
+		MessageCenter.messageTransmission=MessageCenter.messageTransmission+1;
 	}
 	/*
 	 * 向指定目的地生成查询
@@ -973,6 +983,11 @@ public class DTNHost implements Comparable<DTNHost> {
 		
 		this.addMessageToWaitMessage(m);
 		this.router.createNewMessage(m);
+		//消息中心计算消息传输量
+		MessageCenter.messageTransmission=MessageCenter.messageTransmission+1;
+		//添加计量查询数，如果是车辆节点，说明发出的查询是所要计量的
+		if(this.getType()==0)
+			MessageCenter.querys=MessageCenter.querys+1;
 	}
 
 	/**
@@ -1098,6 +1113,9 @@ public class DTNHost implements Comparable<DTNHost> {
     	    		Cloud.getInstance().addNumOfRepliedImmidia();
     	    		Cloud.getInstance().addNumOfRepliedQuery();
     	    		this.createNewMessage(ret);
+    	    		//添加计量数据向下传送数量
+    	    		MessageCenter.pullDownDatas=MessageCenter.pullDownDatas+ds.size();
+    	    		
     	    		return 1;
     			}else{//如果在云端获取不到相应的数据，则从根据edge node中获取数据
     	
@@ -1124,7 +1142,8 @@ public class DTNHost implements Comparable<DTNHost> {
         	    		}
         	    		Cloud.getInstance().addToRepliedMessage(mes);
         	    		Cloud.getInstance().addNumOfRepliedQuery();
-        	    		
+        	    		//添加计量数据向下传送数量
+        	    		MessageCenter.pullDownDatas=MessageCenter.pullDownDatas+ds.size();
     					this.createNewMessage(ret);
     					return 1;
     				}else{
@@ -1147,6 +1166,7 @@ public class DTNHost implements Comparable<DTNHost> {
     
     //相应处理回复函数，从回复消息中获取数据并存入节点中的datas
     public void processReply(Message m){
+    	double beginTime=SimClock.getTime();
     	System.out.println(this.getName()+"正在接收回复。。。。");
     	Set<String> keys=m.getProKeys();
     	int size=0;
@@ -1162,6 +1182,9 @@ public class DTNHost implements Comparable<DTNHost> {
     					this.filterCube.putRequest(r);
     					this.replyQueryTime=this.replyQueryTime+SimClock.getInstance().getTime()-r.getTime()+mes.getTranTimeRAC();
     					this.numOfRepliedQuery++;
+    					//计量成功查询数量
+    					if(this.getType()==0)
+    						MessageCenter.repliedQuerys=MessageCenter.repliedQuerys+1;
     				}
     					
     				delMessage.add(mes);
@@ -1176,6 +1199,8 @@ public class DTNHost implements Comparable<DTNHost> {
     	}
     	System.out.println("==================================="+m.getTo().name+"共收到来自"+m.getFrom()
     	.name+"的"+size+"条数据");
+    	MessageCenter.filterCubeUpdateTime=MessageCenter.filterCubeUpdateTime+SimClock.getTime()-beginTime;
+    	MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
     }
     
     /*

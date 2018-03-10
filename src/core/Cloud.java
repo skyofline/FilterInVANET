@@ -332,6 +332,8 @@ public class Cloud {
 					dels.add(m);
 					m.setReceiveReplyTime(SimClock.getTime());
 					this.addNumOfRepliedQuery();
+					//添加计量数据向下传送数量
+					MessageCenter.pullDownDatas=MessageCenter.pullDownDatas+1;
 				}
 				
 			}

@@ -29,8 +29,30 @@ public class MessageCenter {
     public static double cost = 0;//事件传输总消耗
     public static Map<DTNHost,Double> transformTime = new HashMap<>();//事件传输时间，从产生到判定所需时间
     
-    
-    
+    /*
+     * 接下来的是性能影响因素metric
+     */
+    //消息传送量
+    public static double messageTransmission=0;
+    //数据向上推送的数量
+    public static double pushUpDatas=0;
+    //数据向下拉的数量
+    public static double pullDownDatas=0;
+    //成功回复查询的比例
+    public static double repliedQueryRate=0;
+    //查询数量
+    public static double querys;
+    //成功查询数量
+    public static double repliedQuerys=0;
+    //计算成功回复查询比例的函数
+    public static void calReplyRate(){
+    	if(MessageCenter.querys==0) MessageCenter.repliedQueryRate=0;
+    	else MessageCenter.repliedQueryRate=MessageCenter.repliedQuerys/MessageCenter.querys;
+    }
+    //filter cube 更新的计算时间
+    public static double filterCubeUpdateTime=0;
+    //存储filter cube的更新次数
+    public static double filterCubeUpdates=0;
     //暂时添加的
     //查询的最长存在时间
     public static double exitTime=1500;
