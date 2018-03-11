@@ -128,6 +128,12 @@ public class FilterCube {
     	}
   		if(ks.size()==i){
   			System.out.println("Cloud向filter cube中插入数据失败");
+  			System.out.println("数据结构："+d.toString());
+  			System.out.println("keyset结构："+ks.size());
+  			for(Keys k:ks){
+  				if(k.inRange(d)) System.out.println(k.toString()+"inRandge");
+  				else System.out.println(k.toString()+"not in range");
+  			}
   		}
   		else {
   			System.out.println("成功插入数据");
@@ -589,6 +595,7 @@ public class FilterCube {
 		if(dimension.equals("Weather")) return 3;
 		else if(dimension.equals("Time")) return 5;
 		else if(dimension.equals("TrafficCondition")) return 3;
+		else if(dimension.equals("Size")) return 1;
 		else return 3;
 	}
 	/*

@@ -83,6 +83,7 @@ public class Data {
 			this.dims.put("TrafficCondition",(double)trafficSitu);
 			//使用随机数据生成图像大小
 			double sizes=r.nextDouble();
+			if(sizes<0) sizes=0-sizes;
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;

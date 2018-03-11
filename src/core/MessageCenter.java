@@ -56,9 +56,9 @@ public class MessageCenter {
     
     //暂时添加的
     //查询的最长存在时间
-    public static double exitTime=1500;
+    public static double exitTime=900;
     //有效距离
-    public static double dis=200;
+    public static double dis=500;
     //符合数据查询的时间间距长度
     public static double okTime=300;
     //为类别为交通等数据的查询进行选择目的RSU

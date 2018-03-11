@@ -13,7 +13,7 @@ import core.SimClock;
 public class Request {
 	private int isReplyed=0;//该项用来表示该request是否被回复，或无法被回复。初始值为0，代表等待回复，值为1代表已回复，值为2代表该request不能被回复
 	private Coord location;//要查询的数据的地点
-	private double time;//生成查询时间，同时也是查询的时间
+	private double time;//查询的时间
 	private int type;//要查询的数据的类型
 	private double size=0;//查询需求的最小数据大小
 	private int level;//查询的精度级别
@@ -44,6 +44,7 @@ public class Request {
 		if(this.getType()!=d.getType()) return false;
 		if(this.getLocation().distance(d.getLocation())>MessageCenter.dis)
 			return false;
+		if(Math.abs(this.getTime()-d.getTime())>MessageCenter.okTime) return false;
 		Set<String> dims= this.dims.keySet();
 		//设置标识默认为0即为false
 		int sign=0;

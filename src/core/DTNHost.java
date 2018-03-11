@@ -642,7 +642,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.router.update();		
 		//如果是车辆节点，则采集数据，按照一定时间
-		if(this.time%90==1){
+		if(this.time%120==1){
 			if(this.type==0) {
 				this.collectData();
 				
@@ -742,8 +742,8 @@ public class DTNHost implements Comparable<DTNHost> {
 	private boolean setNextWaypoint() {
 		if (path == null) {
 			if(this.stepOfTrack<this.moveTracks.size()){
-				//在汽车行驶轨迹之前，先向目的地发送查询消息，查询该地点的数据信息
-				this.createRequestMessage(this.moveTracks.get(this.stepOfTrack).getLocation());
+				//在汽车行驶轨迹之前，先向目的地发送查询消息，查询该地点的数据信息,在整个模型运行5分钟之后开始
+				if(SimClock.getTime()>300) this.createRequestMessage(this.moveTracks.get(this.stepOfTrack).getLocation());
 				path = movement.getPath(this.location,this.moveTracks.get(stepOfTrack).getLocation());
 				this.stepOfTrack++;
 			}
@@ -854,9 +854,10 @@ public class DTNHost implements Comparable<DTNHost> {
 				if(this.type==1){
 					//一个保存将要删除的message列表
 					List<Message> removeMess=new ArrayList<>();
-					
+				
 					for(Message s:this.waitDataMessages){
-						if(SimClock.getTime()-m.getReceiveQueryTime()>MessageCenter.exitTime) removeMess.add(s);						
+						if(SimClock.getTime()-m.getReceiveQueryTime()>MessageCenter.exitTime) removeMess.add(s);
+						
 					}
 					this.waitDataMessages.removeAll(removeMess);
 				}
@@ -950,8 +951,9 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void createNewMessage(Message m) {
 		if(m.getType()==Message.Query_Type){
+			
 			System.out.println("****************************");
-			m.setReceiveQueryTime(SimClock.getTime());
+			m.setReceiveQueryTime(SimClock.getTime()+MessageCenter.okTime);
 			//创建一条查询
 			Request q=this.createNewRequest();
 			q.setTime(SimClock.getTime());
@@ -977,7 +979,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		m.setReceiveQueryTime(SimClock.getTime());
 		//创建一条查询
 		Request q=this.createNewRequest();
-		q.setTime(SimClock.getTime());
+		q.setTime(SimClock.getTime()+MessageCenter.okTime);
 		q.setLocation(c);
 		m.addProperty("Query", q);
 		
@@ -1177,22 +1179,26 @@ public class DTNHost implements Comparable<DTNHost> {
     			//如果消息中包含数据，则存储到RSU的filterCube中
     			List<Message> delMessage=new ArrayList<>();
     			for(Message mes:this.waitMessages){
-    				Request r=(Request) mes.getProperty("Query");
-    				if(r.judgeData(nd)){
-    					this.filterCube.putRequest(r);
-    					this.replyQueryTime=this.replyQueryTime+SimClock.getInstance().getTime()-r.getTime()+mes.getTranTimeRAC();
-    					this.numOfRepliedQuery++;
-    					delMessage.add(mes);
-    					//计量成功查询数量
-    					if(this.getType()==0)
-    						MessageCenter.repliedQuerys=MessageCenter.repliedQuerys+1;
+    				if(SimClock.getTime()-mes.getCreationTime()>MessageCenter.exitTime) delMessage.add(mes);
+    				else{
+    					Request r=(Request) mes.getProperty("Query");
+    					if(r.judgeData(nd)){
+    						this.filterCube.putRequest(r);
+    						this.replyQueryTime=this.replyQueryTime+SimClock.getTime()-r.getTime()+mes.getTranTimeRAC();
+    						this.numOfRepliedQuery++;
+    						delMessage.add(mes);
+    						//计量成功查询数量
+    						if(this.getType()==0)
+    							MessageCenter.repliedQuerys=MessageCenter.repliedQuerys+1;
+    					}
     				}
+    				
     			}
     			this.waitMessages.removeAll(delMessage);
     			  				
     			this.filterCube.putData(nd,this);
-    			System.out.println("来自"+m.getFrom().name+"发往"+m.getTo().name+
-    					"消息类型为"+m.getType()+",data的数据信息为："+m.getProperty(s).toString());
+//    			System.out.println("来自"+m.getFrom().name+"发往"+m.getTo().name+
+//    					"消息类型为"+m.getType()+",data的数据信息为："+m.getProperty(s).toString());
     			size=size+1;
     		}
     	}

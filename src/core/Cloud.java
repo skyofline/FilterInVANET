@@ -64,6 +64,7 @@ public class Cloud {
     public Cloud(){
     	this.createOrginFilterCube();
     	this.splitFilterCubeFirst();
+    	this.filterCube.showFilterCubeStruct();
     }
     /*
      * 下传数据到edge端
@@ -105,7 +106,7 @@ public class Cloud {
     	orginFilter.addDimension("Weather",0,2);
     	orginFilter.addDimension("Time",0,4);
     	orginFilter.addDimension("TrafficCondition",0,2);
-    	orginFilter.addDimension("Size",0.3*1024*1024,2*1024*1024);
+    	orginFilter.addDimension("Size",0.2*1024*1024,2*1024*1024);
     	this.filterCube.addDimFrameByFilter(orginFilter);
     	//对原始filter cube进行切分以完成Filter Cube的建立过程
     }

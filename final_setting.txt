@@ -107,7 +107,7 @@ Events1.class = MessageEventGenerator
 
 # Message ID prefix
 #Events1.prefix = M
-#Events1.interval = 30,40
+#Events1.interval = 2,5
 #Events1.hosts = 0,300
 #Events1.tohosts = 0,300
 #Events1.size = 1k,10k
