@@ -64,7 +64,7 @@ public class DTNHost implements Comparable<DTNHost> {
     private List<Message> waitMessages=new ArrayList<Message>();
     //存储等待数据的查询消息
     private List<Message> waitDataMessages=new ArrayList<Message>();  
-    private int type;//节点类型，包含一般节点（0）和RSU（1）还有cloud节点（2）
+    private int type;//节点类型，包含一般车辆节点（0）和RSU（1）还有cloud节点（2）
     private int time;//用来记录节点更新的次数
     
     //存储filter cube中更新filter各个维度的最新一次时间
@@ -1166,7 +1166,7 @@ public class DTNHost implements Comparable<DTNHost> {
     
     //相应处理回复函数，从回复消息中获取数据并存入节点中的datas
     public void processReply(Message m){
-    	double beginTime=SimClock.getTime();
+    	
     	System.out.println(this.getName()+"正在接收回复。。。。");
     	Set<String> keys=m.getProKeys();
     	int size=0;
@@ -1182,12 +1182,11 @@ public class DTNHost implements Comparable<DTNHost> {
     					this.filterCube.putRequest(r);
     					this.replyQueryTime=this.replyQueryTime+SimClock.getInstance().getTime()-r.getTime()+mes.getTranTimeRAC();
     					this.numOfRepliedQuery++;
+    					delMessage.add(mes);
     					//计量成功查询数量
     					if(this.getType()==0)
     						MessageCenter.repliedQuerys=MessageCenter.repliedQuerys+1;
     				}
-    					
-    				delMessage.add(mes);
     			}
     			this.waitMessages.removeAll(delMessage);
     			  				
@@ -1199,8 +1198,7 @@ public class DTNHost implements Comparable<DTNHost> {
     	}
     	System.out.println("==================================="+m.getTo().name+"共收到来自"+m.getFrom()
     	.name+"的"+size+"条数据");
-    	MessageCenter.filterCubeUpdateTime=MessageCenter.filterCubeUpdateTime+SimClock.getTime()-beginTime;
-    	MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
+  
     }
     
     /*

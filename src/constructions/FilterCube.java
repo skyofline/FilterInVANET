@@ -151,6 +151,7 @@ public class FilterCube {
 	}
     //更新filter cube中每一行的filter
 	public void update(){
+		double beginTime=SimClock.getTime();
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
 		Set<Keys> k=this.fc.keySet();
@@ -233,7 +234,8 @@ public class FilterCube {
 			this.fc.putAll(adds);
 		}
 			
-	
+		MessageCenter.filterCubeUpdateTime=SimClock.getTime()-beginTime;
+		MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
 	}
 	/*
 	 * 更新filter cube中的每一行数据，判断留存或删除

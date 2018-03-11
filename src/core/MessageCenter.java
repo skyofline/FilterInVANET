@@ -51,8 +51,9 @@ public class MessageCenter {
     }
     //filter cube 更新的计算时间
     public static double filterCubeUpdateTime=0;
-    //存储filter cube的更新次数
+   //filter cube的更新次数
     public static double filterCubeUpdates=0;
+    
     //暂时添加的
     //查询的最长存在时间
     public static double exitTime=1500;

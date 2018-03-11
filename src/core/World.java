@@ -327,7 +327,10 @@ public class World {
 		res=res+"总的消息量为："+MessageCenter.querys+","+"数据向上推送的数量为："+MessageCenter.pushUpDatas
 				+",数据向下拉取的数量为："+MessageCenter.pullDownDatas
 				+",成功查询的比例为："+MessageCenter.repliedQueryRate
-				+",进行filter cube更新所花费的平均时间为："+MessageCenter.filterCubeUpdateTime/MessageCenter.filterCubeUpdates;
+				+",车辆发出的查询数量为："+MessageCenter.querys
+				+",车辆成功接收回复的数量为："+MessageCenter.repliedQuerys
+				+",进行filter cube更新所花费的时间为："+MessageCenter.filterCubeUpdateTime
+				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates;
 
 		res=res+"\n====================="+SimClock.getTime()+"=============================\n";
 		return res;
