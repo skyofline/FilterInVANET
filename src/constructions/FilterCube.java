@@ -72,14 +72,17 @@ public class FilterCube {
     			//添加数据后，判断尝试将数据上传
     			if(dtn.getType()==0){
     				this.numOfExpandDatas++;
-    				if(d.getExpandState()==1) dtn.uploadDataToEdge(d);
+    				if(d.getExpandState()==0) dtn.uploadDataToEdge(d);
     				 
     			}
     			else if(dtn.getType()==1) {
     				this.numOfExpandDatas++;
-    				if(d.getExpandState()==1) dtn.uploadDataToCloud(d);
+    				if(d.getExpandState()==0) dtn.uploadDataToCloud(d);
     			}
-    				
+    			
+    			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
+    			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
+    			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
     			break;
     		}else{
     			i++;
@@ -121,6 +124,9 @@ public class FilterCube {
     			System.out.print("Cloud添加数据前的剩余空间"+this.restSpace);
     			this.restSpace=this.restSpace-d.getSize();
     			System.out.println("，添加后的剩余空间为"+this.restSpace);
+    			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
+    			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
+    			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
     			break;
     		}else{
     			i++;
@@ -200,6 +206,8 @@ public class FilterCube {
 						f.setBasicStatus(0);
 					}else{
 						//将filter置为more状态，此时没必要，暂不进行操作
+						//取消filter的basic状态
+						f.setBasicStatus(0);
 						int len=f.getDims().size();
 						double[] min=new double[len];
 				    	int[] split=new int[len];
@@ -242,6 +250,7 @@ public class FilterCube {
 			
 		MessageCenter.filterCubeUpdateTime=SimClock.getTime()-beginTime;
 		MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
+		System.out.println("更新时间为："+MessageCenter.filterCubeUpdateTime+"，更新次数为："+MessageCenter.filterCubeUpdates);
 	}
 	/*
 	 * 更新filter cube中的每一行数据，判断留存或删除
@@ -258,13 +267,16 @@ public class FilterCube {
 			double delNum=0;
 			for(Data d:datas){
 				/*
-				 * 这里暂时使用数据时间作为删除数据的依据
+				 * 这里暂时使用数据时间和数据使用次数作为删除数据的依据
 				 */
 				
-				if(SimClock.getTime()-d.getTime()>MessageCenter.exitTime){
+				if((SimClock.getTime()-d.getTime()>1800&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>3600&&d.getUsageCount()<5)){
 					dels.add(d);
 					releaseSpace=releaseSpace+d.getSize();
 					delNum=delNum+1;
+					if(d.getUsageCount()>0) v.getFilters().get(0).addUsedDatas(-1);
+					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
+					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
 				/*
 				 * 进行数据整合的代码
@@ -297,10 +309,13 @@ public class FilterCube {
 				 * 这里暂时使用数据时间作为删除数据的依据
 				 */
 				
-				if(SimClock.getTime()-d.getTime()>MessageCenter.exitTime||d.getUsageCount()<5){
+				if(SimClock.getTime()-d.getTime()>1800||d.getUsageCount()<5){
 					dels.add(d);
 					releaseSpace=releaseSpace+d.getSize();
 					delNum=delNum+1;
+					if(d.getUsageCount()>0) v.getFilters().get(0).addUsedDatas(-1);
+					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
+					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
 				/*
 				 * 进行数据整合的代码
@@ -384,10 +399,21 @@ public class FilterCube {
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
     					int sign=0;//在此处用于标记是否该数据是否是传播状态
-    					if(t.getExpandState()==1) sign=1;
+    					if(t.getExpandState()==0) sign=1;
     					f.resetDataStatus(t);
-    					if(t.getUsageCount()==1) f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
-    					if(t.getExpandState()==1&&sign==0){
+    					if(t.getUsageCount()==1){
+    						if(sign==0){
+    							if(t.getExpandState()==1) f.addUsedBlockDatas(1);
+    						}
+    						else{
+    							if(t.getExpandState()==0) f.addUnusedPassDatas(-1);
+    							else if(t.getExpandState()==1) f.addUsedBlockDatas(1);
+    						}
+    						f.addUsedDatas(1);
+    						f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    					}
+    					//判断是否上传
+    					if(t.getExpandState()==0&&sign==0){
     					
     						if(dtn.getType()==0) dtn.uploadDataToEdge(t);
     						else if(dtn.getType()==1) dtn.uploadDataToCloud(t);
@@ -478,9 +504,20 @@ public class FilterCube {
     			for(Data t:s){
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
-    					
+    					int sign=0;//在此处用于标记是否该数据是否是传播状态
+    					if(t.getExpandState()==0) sign=1;
     					f.resetDataStatus(t);
-    					if(t.getUsageCount()==1) f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    					if(t.getUsageCount()==1){
+    						if(sign==0){
+    							if(t.getExpandState()==1) f.addUsedBlockDatas(1);
+    						}
+    						else{
+    							if(t.getExpandState()==0) f.addUnusedPassDatas(-1);
+    							else if(t.getExpandState()==1) f.addUsedBlockDatas(1);
+    						}
+    						f.addUsedDatas(1);
+    						f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    					}
     					res.add(t);
     				}
     			}
@@ -554,7 +591,7 @@ public class FilterCube {
 		if(num>1){
 //			List<Keys> del=new ArrayList<>();
 			if(k.getKey().containsKey(dimension)){
-				Values newValues=new Values(this.fc.get(k));
+				
 				//将dimension维度进行切分,平均切分成num个filter
 				//首先获得当前filter在该维度的跨度值，然后进行切分
 				double max=k.getKey().get(dimension).getMaxBord()-k.getKey().get(dimension).getMinBord();
@@ -562,11 +599,25 @@ public class FilterCube {
 				for(int i=0;i<num;i++){
 					Keys nKey=new Keys(k);
 					nKey.changeDimensionValue(dimension, k.getKey().get(dimension).getMinBord()+i*aver,k.getKey().get(dimension).getMinBord()+(i+1)*aver);
-					
+					Values newValues=new Values(this.fc.get(k));
 					//先清空newValues中的数据，然后从原来数据中挑选符合的放入newValues中
 					newValues.clearAllDatas();
+					newValues.clearAllRequests();
+					newValues.changeDimensionValue(dimension, k.getKey().get(dimension).getMinBord()+i*aver,k.getKey().get(dimension).getMinBord()+(i+1)*aver);
+					int usedDatas=0;
+					int unusedPassDatas=0;
+					int usedBlockDatas=0;
 					for(Data d:this.fc.get(k).getDatas()){
 						if(nKey.inRange(d)) newValues.getDatas().add(d);
+						if(d.getUsageCount()>0) usedDatas++; 
+						if(d.getExpandState()==0&&d.getUsageCount()==0) unusedPassDatas++;
+						if(d.getExpandState()==1&&d.getUsageCount()>0) usedBlockDatas++;
+					}
+					newValues.getFilters().get(0).setUsedDatas(usedDatas);
+					newValues.getFilters().get(0).setUnusedPassDatas(unusedPassDatas);
+					newValues.getFilters().get(0).setUsedBlockDatas(usedBlockDatas);
+					for(Request r:this.fc.get(k).getRequests()){
+						if(nKey.inRange(r)) newValues.getRequests().add(r);
 					}
 					//将切分后的filter加入到filtercube中
 					addKV.put(nKey, newValues);

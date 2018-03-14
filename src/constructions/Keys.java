@@ -34,6 +34,8 @@ public class Keys{
 			this.key.get(dim).setMinBord(minV);
 			this.key.get(dim).setMaxBord(maxV);
 			
+		}else{
+			System.out.println("修改filter cube 、key中的维度值失败");
 		}
 	}
 	public void addKey(String s,double mind,double maxd){

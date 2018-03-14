@@ -81,6 +81,9 @@ public class DTNHost implements Comparable<DTNHost> {
      private long numOfRepliedQuery=0;//存储已经被回复的query个数
      private double replyQueryTime=0;//用于回复查询的时间
      private long numOfRepliedImmidia=0;//用于存储能够利用本地数据回复的查询的个数
+     
+     //车辆查询未及时回复的消息
+     private int failedMessages=0;
     /*
      * FilterCube
      */
@@ -1179,7 +1182,10 @@ public class DTNHost implements Comparable<DTNHost> {
     			//如果消息中包含数据，则存储到RSU的filterCube中
     			List<Message> delMessage=new ArrayList<>();
     			for(Message mes:this.waitMessages){
-    				if(SimClock.getTime()-mes.getCreationTime()>MessageCenter.exitTime) delMessage.add(mes);
+    				if(SimClock.getTime()-mes.getCreationTime()>MessageCenter.exitTime){
+    					delMessage.add(mes);
+    					this.failedMessages++;
+    				}
     				else{
     					Request r=(Request) mes.getProperty("Query");
     					if(r.judgeData(nd)){
@@ -1497,6 +1503,18 @@ public class DTNHost implements Comparable<DTNHost> {
 
 	public void setNumOfRepliedImmidia(long numOfRepliedImmidia) {
 		this.numOfRepliedImmidia = numOfRepliedImmidia;
+	}
+	public int getFailedMessages() {
+		return failedMessages;
+	}
+	public void setFailedMessages(int failedMessages) {
+		this.failedMessages = failedMessages;
+	}
+	public static int getCAR_TYPE() {
+		return CAR_TYPE;
+	}
+	public static void setCAR_TYPE(int cAR_TYPE) {
+		CAR_TYPE = cAR_TYPE;
 	}
 		
 }

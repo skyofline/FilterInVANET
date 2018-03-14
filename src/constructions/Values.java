@@ -72,4 +72,18 @@ public class Values{
 	public List<Filter> getFilters(){
 		return this.filters;
 	}
+	public void clearAllRequests() {
+		// TODO Auto-generated method stub
+		@SuppressWarnings("unused")
+		List<Request> emptyRequests=new ArrayList<Request>();
+		this.requests=emptyRequests;
+	}
+	public void changeDimensionValue(String dimension, double minV, double maxV) {
+		// TODO Auto-generated method stub
+		if(this.filters.get(0).getDims().containsKey(dimension)){
+			this.filters.get(0).getDims().get(dimension).setMinBord(minV);
+			this.filters.get(0).getDims().get(dimension).setMaxBord(maxV);
+		}
+		
+	}
 }

@@ -13,6 +13,12 @@ import core.MessageCenter;
 import core.SimClock;
 
 public class Filter {
+	//filter控制的数据中被使用的个数
+	private int usedDatas=0;
+	//filter控制的数据中被允许传播但使用次数为0的数据
+	private int unusedPassDatas=0;
+	//filter控制的数据中不被允许传播但是被使用查询多次的数据
+	private int usedBlockDatas=0;
 	//计算split factor的重要参数,0-1，暂时默认为0.5
 	private double balanceFactor=0.5;
 	//计算cost_radio的参数，factor for data transmission
@@ -173,16 +179,13 @@ public class Filter {
 
 	//计算filter的radio cost
 	public double calRadioCost(List<Data> datas,List<Request> requests){
-		double res= this.dataMatchRatio(datas,requests)+(this.reqTransmFactor/this.dataTransmFactor)*this.requestToDataRatio(datas,requests);
+		double res= this.dataMatchRatio(datas)+(this.reqTransmFactor/this.dataTransmFactor)*this.requestToDataRatio(datas,requests);
 		return res;
 	}
 	//计算某个filter中的data match ratio,根据数据的使用次数判断
-	public double dataMatchRatio(List<Data> datas,List<Request> requests){
-		int num=0;
-		for(Data d:datas){
-			if(d.getUsageCount()>0) num++;
-		}
-		return (double)num/datas.size();
+	public double dataMatchRatio(List<Data> datas){
+		if(datas.size()==0) return 0;
+		else return (double)this.usedDatas/datas.size();
 	}
 	
 	//计算某个filter的request to data ratio
@@ -192,15 +195,7 @@ public class Filter {
 	//计算filter的mistake factor
 	public double getMistakeFactor(List<Data>datas){
 		double res=0.5;
-		Iterator it=datas.iterator();
-		int passNum=0,blockNum=0,sum=0;
-		while(it.hasNext()){
-			Data d=(Data) it.next();
-			sum++;
-			if(d.getExpandState()==0&&d.getUsageCount()==0) passNum++;
-			else if(d.getExpandState()==1&&d.getUsageCount()>0) blockNum++;
-		}
-		return res*(blockNum+passNum)/sum;
+		return res*(this.usedBlockDatas+this.unusedPassDatas)/datas.size();
 	}
 	/*
 	 * 计算一个filter是不是另一个filter的base filter
@@ -227,6 +222,7 @@ public class Filter {
 		Filter f=this.copy();
 		return f;
 	}
+
 	
 	public int getType() {
 		return type;
@@ -327,5 +323,32 @@ public class Filter {
 	}
 	public void setBasicStatus(int basicStatus) {
 		this.basicStatus = basicStatus;
+	}
+	public int getUsedDatas() {
+		return usedDatas;
+	}
+	public void setUsedDatas(int usedDatas) {
+		this.usedDatas = usedDatas;
+	}
+	public void addUsedDatas(int i){
+		this.setUsedDatas(this.getUsedDatas()+i);
+	}
+	public void addUnusedPassDatas(int i){
+		this.setUnusedPassDatas(this.getUnusedPassDatas()+i);
+	}
+	public void addUsedBlockDatas(int i){
+		this.setUsedBlockDatas(this.getUsedBlockDatas()+i);
+	}
+	public int getUnusedPassDatas() {
+		return unusedPassDatas;
+	}
+	public void setUnusedPassDatas(int unusedPassDatas) {
+		this.unusedPassDatas = unusedPassDatas;
+	}
+	public int getUsedBlockDatas() {
+		return usedBlockDatas;
+	}
+	public void setUsedBlockDatas(int usedBlockDatas) {
+		this.usedBlockDatas = usedBlockDatas;
 	}
 }
