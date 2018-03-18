@@ -148,9 +148,9 @@ public class DTNHost implements Comparable<DTNHost> {
     		split[i]=1;
     	}
     	Map<Keys,Values> addKV=new LinkedHashMap<Keys,Values>();
-    	Keys orginKey=null;
+    	List<Keys> orginKey=new ArrayList<Keys>();
     	for(Keys k:this.filterCube.getFC().keySet()){
-    		orginKey=k;
+    		int befores=addKV.size();
     		for(int i=0;i<len;i++){
     			String dim=this.filterCube.getDimensions().get(i);
     			for(int j=1;j<=this.filterCube.getMaxSplits(dim);j++){
@@ -165,10 +165,28 @@ public class DTNHost implements Comparable<DTNHost> {
     				addKV.putAll(newMap);
     			}
     		}
+    		if(addKV.size()>befores) orginKey.add(k);
     	}
-    	if(orginKey!=null&&addKV.size()>1){
-    		this.filterCube.getFc().remove(orginKey);
+    	if(orginKey.size()>0&&addKV.size()>1){
+    		for(Keys t:orginKey) this.filterCube.getFc().remove(t);
     		this.filterCube.getFc().putAll(addKV);
+    	}else{
+    		if(this.filterCube.getFC().keySet().size()==1){
+    			Map<Keys,Values> addsNew=new LinkedHashMap<Keys,Values>();
+    			Keys news=null;
+    			for(Keys k:this.filterCube.getFc().keySet()){
+    				news=k;
+    				for(int i=0;i<len;i++){
+    					Map<Keys,Values> newMap=this.filterCube.splitDimension(k, this.filterCube.getDimensions().get(i), 2);
+    					if(newMap.size()>1) addsNew.putAll(newMap);
+    				}
+    			}
+    			if(news!=null&&addsNew.size()>1){
+    				this.filterCube.getFc().remove(news);
+    				this.filterCube.getFC().putAll(addsNew);
+    			}
+    			
+    		}
     	}
     	
     }
@@ -645,7 +663,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.router.update();		
 		//如果是车辆节点，则采集数据，按照一定时间
-		if(this.time%120==1){
+		if(this.time%90==1){
 			if(this.type==0) {
 				this.collectData();
 				
@@ -1516,5 +1534,10 @@ public class DTNHost implements Comparable<DTNHost> {
 	public static void setCAR_TYPE(int cAR_TYPE) {
 		CAR_TYPE = cAR_TYPE;
 	}
-		
+	public int getWaitMessagesNum(){
+		return this.waitMessages.size();
+	}
+	public List<Message> getWaitMessage(){
+		return this.waitMessages;
+	}
 }

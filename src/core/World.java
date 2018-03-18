@@ -323,9 +323,19 @@ public class World {
 		res=res+MessageCenter.showAverTimeOfCloud()+"\n";
 
 		int allFailedMessages=0;
+		int allWaitMessages=0;
 		for(DTNHost d:SimScenario.getInstance().getHosts()){
-			if(d.getType()==DTNHost.getCAR_TYPE()) allFailedMessages+=d.getFailedMessages();
+			if(d.getType()==DTNHost.getCAR_TYPE()){
+				allFailedMessages+=d.getFailedMessages();
+				allWaitMessages+=d.getWaitMessagesNum();
+				for(Message m:d.getWaitMessage()){
+					if(SimClock.getTime()-m.getCreationTime()>MessageCenter.exitTime) allFailedMessages++;
+					allWaitMessages--;
+				}
+			}
 		}
+		
+		
 		//最后展示一些实验参数,首先重新计算成功查询的比例，然后再依次展示
 		MessageCenter.calReplyRate();
 		res=res+"总的消息量为："+MessageCenter.querys+","+"数据向上推送的数量为："+MessageCenter.pushUpDatas
@@ -334,6 +344,7 @@ public class World {
 				+",车辆发出的查询数量为："+MessageCenter.querys
 				+",车辆成功接收回复的数量为："+MessageCenter.repliedQuerys
 				+",车辆中因为过期而失败的查询数量为："+allFailedMessages
+				+",仍然在车辆中等待数据回复的数量为："+allWaitMessages
 				+",进行filter cube更新所花费的时间为："+MessageCenter.filterCubeUpdateTime
 				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates;
 

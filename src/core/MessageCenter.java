@@ -178,7 +178,7 @@ public class MessageCenter {
     		}
     	}
     	allRate=allRate/num;
-    	return "RSU节点平均的本地数据满足查询率为："+allRate;
+    	return "RSU节点平均的本地数据满足查询率为："+allRate+"其中rsu个数："+num;
     }
     //获取RSU回复查询的平均消耗时间
     public static String showAverTimeOfRSU(){
