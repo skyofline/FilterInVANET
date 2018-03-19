@@ -22,9 +22,9 @@ public class Filter {
 	//计算split factor的重要参数,0-1，暂时默认为0.5
 	private double balanceFactor=0.5;
 	//计算cost_radio的参数，factor for data transmission
-	private double dataTransmFactor=2;
+	private double dataTransmFactor=0.5;
 	//计算cost_radio的参数，factor for request transmission
-	private double reqTransmFactor=0.5;
+	private double reqTransmFactor=1;
 	private int type;//filter 要求的数据类型，文本/图像/音频/视频
 	private double time;//filter产生时间
 	private Coord loc;//filter所属区域

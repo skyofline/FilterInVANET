@@ -33,7 +33,7 @@ public class FilterCube {
 	private double updateThreshold1=0.5;
 	private double updateThreshold2=1;
 	//判断存储空间是否更新的阈值
-	private double spaceThreshold=0.15;
+	private double spaceThreshold=0.05;
 	/*
 	 * 这里存储评价体系参数
 	 */
@@ -270,7 +270,7 @@ public class FilterCube {
 				 * 这里暂时使用数据时间和数据使用次数作为删除数据的依据
 				 */
 				
-				if((SimClock.getTime()-d.getTime()>1800&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>3600&&d.getUsageCount()<5)){
+				if((SimClock.getTime()-d.getTime()>3600&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>7200&&d.getUsageCount()<5)){
 					dels.add(d);
 					releaseSpace=releaseSpace+d.getSize();
 					delNum=delNum+1;

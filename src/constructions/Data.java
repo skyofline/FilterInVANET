@@ -199,12 +199,15 @@ public class Data {
 	 *判断一条数据上的维度值与另一条数据的对应维度上的值是否在一定范围内可视为相等
 	 */
 	public boolean isInRange(String s,double dest1,double dest2){
+		if(!this.dims.containsKey(s)) return false;
 		//如果数据能通过检查则视为相等
 		if(s.equals("Weather")){
 			if(Math.abs(dest1-dest2)>0.5) return false;
 		}else if(s.equals("Time")){
 			if(Math.abs(dest1-dest2)>0.5) return false;
 		}else if(s.equals("TrafficCondition")){
+			if(Math.abs(dest1-dest2)>0.5) return false;
+		}else{
 			if(Math.abs(dest1-dest2)>0.5) return false;
 		}
 		return true;

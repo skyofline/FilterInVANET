@@ -344,6 +344,34 @@ public class Cloud {
 			this.waitDataMessages.removeAll(unreplied);
 		}
 	}
+	/*
+	 * 云端当获取到数据后处理之前无法回复的数据,单个
+	 */
+	public void workOnWaitMessage(Data d){
+		System.out.println("Cloud正在处理数据中================");
+		List<Message> dels=new ArrayList<Message>();
+		List<Message> unreplied=new ArrayList<Message>();
+		for(Message m:this.waitDataMessages){
+			Request r=(Request) m.getProperty("Query");
+			if(SimClock.getTime()-r.getTime()>MessageCenter.exitTime){
+				unreplied.add(m);
+			}else if(r.judgeData(d)){
+				this.filterCube.putDataForCloud(d);
+				//然后数据传递到edge node，并处理之前无法回复的消息
+				m.getTo().workOnWaitMessage(d);
+				dels.add(m);
+				m.setReceiveReplyTime(SimClock.getTime());
+				this.addNumOfRepliedQuery();
+				//添加计量数据向下传送数量
+				MessageCenter.pullDownDatas=MessageCenter.pullDownDatas+1;
+			}
+			
+		}
+		this.unrepliedMessage.addAll(unreplied);
+		this.repliedMessages.addAll(dels);
+		this.waitDataMessages.removeAll(dels);
+		this.waitDataMessages.removeAll(unreplied);
+	}
 	public void showEffect(){
 		System.out.println("Cloud的剩余空间比率为："+this.getRestSpaceRate()
 				+"，消息查询成功平均时间为："+this.getAverReplyTime()

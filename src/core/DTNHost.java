@@ -88,39 +88,6 @@ public class DTNHost implements Comparable<DTNHost> {
      * FilterCube
      */
     private FilterCube filterCube=new FilterCube();
-//    //计算获取空间占用率
-//    public double getSpaceOccupRate(){
-//    	return (this.space-this.restSpace)/this.space;
-//    }
- 
-
-    
-//    //计算获得成功回应的数量
-//    public double getSuccReplyNum(){
-//    	double all=0;
-//    	for(Message m:this.queRepMessages.keySet()){
-//    		Message r=this.queRepMessages.get(m);
-//    		if(r!=null){
-//    			if(r.getProperty("reply")==null||!r.getProperty("reply").equals("No reply"))
-//    				all=all+1;
-//    		}    	
-//    	}
-//    	return all;
-//    }
-//    //计算回应比率
-//    public double getReplyRate(){
-//    	if(this.getReplyNum()==0) return 0;
-//    	else return this.getSuccReplyNum()/this.getReplyNum();
-//    }
-//    public void showAver(){
-//    	for(Message m:this.queRepMessages.keySet()){
-//    		if(this.queRepMessages.get(m)!=null){
-//    			System.out.println(m.toString()+"等待时间为："+(this.queRepMessages.get(m).getReceiveReplyTime()-m.getSendQueryTime()));
-////    			if()>100) System.out.println(m.toString());
-//    		}
-//    		
-//    	}
-//    }
     /*
      * 创建原始filter cube,这里暂时使用类别号为1 的类别
      */
@@ -912,18 +879,36 @@ public class DTNHost implements Comparable<DTNHost> {
 					//如果该节点是rsu edge节点，说明发起拉起数据的rsu接收到车辆发送过来的相关数据，
 					//然后对数据进行处理，将数据传送给cloud端进行处理
 					System.out.println(this.getName()+"接收到拉取数据返回消息");
-					List<Data> datas=new ArrayList<Data>();
+					Data d=null;
 					for(String key:m.getProKeys()){
 						if(key.contains("Data")){
-							datas.add((Data) m.getProperty(key));
+							d=(Data) m.getProperty(key);
 						}
 					}
-					for(Data d:datas){
+					if(d!=null)
 						this.filterCube.putData(d,this);
-					}
-					System.out.println(datas.size()+this.getName()+"内的数据条数为："+this.filterCube.getNumOfData());
-					//rsu获取数据后回复至云端处理数据来回复等待数据的消息
-					Cloud.getInstance().workOnWaitMessage(datas);
+					List<Message> dels=new ArrayList<Message>();
+						for(Message mt:this.waitDataMessages){
+							Request r=(Request) mt.getProperty("Query");
+							if(r.judgeData(d)){
+								if(mt.getTo().getAddress()==this.getAddress()){
+									this.filterCube.putData(d,this);
+									Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
+									ret.addProperty("Data"+0+System.currentTimeMillis(), d);
+									ret.setSize((int)d.getSize());	
+									this.createNewMessage(ret);
+									this.numOfRepliedQuery++;			
+									System.out.println(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
+									dels.add(mt);
+								}else{
+									Cloud.getInstance().workOnWaitMessage(d);
+									dels.add(mt);
+								}
+							}
+							this.filterCube.putRequest(r);
+						}
+					this.waitDataMessages.remove(dels);
+					
 				}
 				
 				
@@ -972,16 +957,17 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void createNewMessage(Message m) {
 		if(m.getType()==Message.Query_Type){
-			
-			System.out.println("****************************");
+			if(SimClock.getTime()>300) return;
 			m.setReceiveQueryTime(SimClock.getTime()+MessageCenter.okTime);
 			//创建一条查询
 			Request q=this.createNewRequest();
 			q.setTime(SimClock.getTime());
+			q.setLocation(m.getTo().getLocation());
 			m.addProperty("Query", q);
 			//选择目的节点
 			DTNHost news=MessageCenter.getNearestEdge(this);
 			if(news!=null) m.setTo(news);
+			
 			this.addMessageToWaitMessage(m);
 			//添加计量查询数，如果是车辆节点，说明发出的查询是所要计量的
 			if(this.getType()==0) 
@@ -1175,6 +1161,7 @@ public class DTNHost implements Comparable<DTNHost> {
     					//如果在edge node中没有数据，则从该edge node从周围车辆拉取数据
     					List<DTNHost> dtns=Cloud.getInstance().getEdgesFromMessage(m);
     					for(DTNHost d:dtns){
+    						d.addMessageToWaitDataMessage(m);
     						d.queryDataForRSU(m);
     						
     					}
@@ -1236,12 +1223,36 @@ public class DTNHost implements Comparable<DTNHost> {
      * 
      */
     public void processDataTransfer(Message m){
+    	Data d=null;
     	for(String s:m.getProKeys()){
     		if(s.contains("Data")){
-    			Data d=(Data) m.getProperty(s);
-    			this.filterCube.putData(d,this);
+    			d=(Data) m.getProperty(s);
     		}
-    	}    	
+    	}
+    	if(d!=null){
+    		this.filterCube.putData(d,this);
+    		List<Message> dels=new ArrayList<Message>();
+			for(Message mt:this.waitDataMessages){
+				Request r=(Request) mt.getProperty("Query");
+				if(r.judgeData(d)){
+					if(mt.getTo().getAddress()==this.getAddress()){
+						this.filterCube.putData(d,this);
+						Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
+						ret.addProperty("Data"+0+System.currentTimeMillis(), d);
+						ret.setSize((int)d.getSize());	
+						this.createNewMessage(ret);
+						this.numOfRepliedQuery++;			
+						System.out.println(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
+						dels.add(mt);
+					}else{
+						Cloud.getInstance().workOnWaitMessage(d);
+						dels.add(mt);
+					}
+				}
+				this.filterCube.putRequest(r);
+			}
+			this.waitDataMessages.remove(dels);
+    	}
     }
   
 	@SuppressWarnings("unchecked")

@@ -329,8 +329,11 @@ public class World {
 				allFailedMessages+=d.getFailedMessages();
 				allWaitMessages+=d.getWaitMessagesNum();
 				for(Message m:d.getWaitMessage()){
-					if(SimClock.getTime()-m.getCreationTime()>MessageCenter.exitTime) allFailedMessages++;
-					allWaitMessages--;
+					if(SimClock.getTime()-m.getCreationTime()>MessageCenter.exitTime){
+						allFailedMessages++;
+						allWaitMessages--;
+					}
+					
 				}
 			}
 		}
