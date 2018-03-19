@@ -158,7 +158,6 @@ public class Cloud {
 	 * 对filter cube进行更新
 	 */
     public void updateFilterCube(){
-    	
     	this.filterCube.update();
     }
     
@@ -318,7 +317,6 @@ public class Cloud {
 	 * 云端当获取到数据后处理之前无法回复的数据
 	 */
 	public void workOnWaitMessage(List<Data> ds){
-		System.out.println("Cloud正在处理数据中================");
 		for(Data d:ds){
 			List<Message> dels=new ArrayList<Message>();
 			List<Message> unreplied=new ArrayList<Message>();
@@ -348,7 +346,6 @@ public class Cloud {
 	 * 云端当获取到数据后处理之前无法回复的数据,单个
 	 */
 	public void workOnWaitMessage(Data d){
-		System.out.println("Cloud正在处理数据中================");
 		List<Message> dels=new ArrayList<Message>();
 		List<Message> unreplied=new ArrayList<Message>();
 		for(Message m:this.waitDataMessages){

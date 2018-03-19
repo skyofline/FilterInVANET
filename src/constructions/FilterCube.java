@@ -31,7 +31,7 @@ public class FilterCube {
 	private double restSpace=5*1024*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
 	
 	private double updateThreshold1=0.5;
-	private double updateThreshold2=1;
+	private double updateThreshold2=2;
 	//判断存储空间是否更新的阈值
 	private double spaceThreshold=0.05;
 	/*
@@ -113,7 +113,6 @@ public class FilterCube {
     				if(f.judgeData(d)) f.resetDataStatus(d);
     			}
     			if(this.getRestSpaceRate()<this.spaceThreshold){
-    				System.out.println("Cloud正在更新内容");
     				this.updateDatas();
     			}
     			if(this.getRestSpaceRate()<this.spaceThreshold){
@@ -121,9 +120,7 @@ public class FilterCube {
     			}
     			this.fc.get(k).addData(d);
     			//添加数据时更新filter cube的剩余空间
-    			System.out.print("Cloud添加数据前的剩余空间"+this.restSpace);
     			this.restSpace=this.restSpace-d.getSize();
-    			System.out.println("，添加后的剩余空间为"+this.restSpace);
     			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
     			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
     			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
@@ -142,7 +139,6 @@ public class FilterCube {
   			}
   		}
   		else {
-  			System.out.println("成功插入数据");
   			this.numOfData=this.numOfData+1;
   		}
     	
@@ -174,7 +170,7 @@ public class FilterCube {
 			Filter f=v.getFilters().get(0);//获取第一个filter
 			//如果filter不是basicFilter,则进行计算判断更新状态或置为basic
 			if(f.getBasicStatus()==0){
-				double mf=f.getMistakeFactor(v.getDatas());
+				double mf=f.getMismatchFactor(v.getDatas());
 				if(mf<this.getUpdateThreshold1()){
 //					double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
 					f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
@@ -198,7 +194,7 @@ public class FilterCube {
 					}
 					double avg=misDAF/sum;
 					//计算mismatch factor
-					double mismatchs=this.calMismatchFactor(v.getDatas());
+					double mismatchs=f.getMismatchFactor(v.getDatas());
 					double er=avg/mismatchs;
 					if(er>this.getUpdateThreshold2()){
 						f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
@@ -215,8 +211,8 @@ public class FilterCube {
 				    		min[i]=1000000;
 				    		split[i]=1;
 				    	}
+				    	List<String> l=this.getDimensions();
 				    	for(int i=0;i<len;i++){
-				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
 				    		String dim= l.get(i);
 				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
 				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
@@ -250,7 +246,89 @@ public class FilterCube {
 			
 		MessageCenter.filterCubeUpdateTime=SimClock.getTime()-beginTime;
 		MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
-		System.out.println("更新时间为："+MessageCenter.filterCubeUpdateTime+"，更新次数为："+MessageCenter.filterCubeUpdates);
+	}
+	
+	/*
+	 * 更新filter cube中的一行filter
+	 */
+	public void updateFilter(Keys k,Values v){
+		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
+		List<Keys> delKeys =new ArrayList<Keys>();
+		Filter f=v.getFilters().get(0);//获取第一个filter
+		//如果filter不是basicFilter,则进行计算判断更新状态或置为basic
+		if(f.getBasicStatus()==0){
+			double mf=f.getMismatchFactor(v.getDatas());
+			if(mf<this.getUpdateThreshold1()){
+//				double radioCost=f.calRadioCost(v.getDatas(),v.getRequests());
+				f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
+			}else{
+//				FilterCube newFilterCube=new FilterCube();
+//				newFilterCube.addFilter(f);
+				//设置basic filter 的起始时间
+				f.setBasicTime(SimClock.getTime());
+				//设置filter为basic filter
+				f.setBasicStatus(1);
+			}
+		}else{
+			//对basicFilter进行处理
+			if(Timer.judgeFilter(f, f.getPeriodTime())){
+				//首先计算avg，用于衡量数据量，以此来表达数据广度
+				double misDAF=0;
+				double sum=0;
+				for(Data d:v.getDatas()){
+					if(d.getExpandState()!=f.getStatus()) misDAF=misDAF+1;
+					sum=sum+1;
+				}
+				double avg=misDAF/sum;
+				//计算mismatch factor
+				double mismatchs=f.getMismatchFactor(v.getDatas());
+				double er=avg/mismatchs;
+				if(er>this.getUpdateThreshold2()){
+					f.updateStatusByRadioCost(v.getDatas(),v.getRequests());
+					//此时要把basic状态取消
+					f.setBasicStatus(0);
+				}else{
+					//将filter置为more状态，此时没必要，暂不进行操作
+					//取消filter的basic状态
+					f.setBasicStatus(0);
+					int len=f.getDims().size();
+					double[] min=new double[len];
+			    	int[] split=new int[len];
+			    	for(int i=0;i<len;i++){
+			    		min[i]=1000000;
+			    		split[i]=1;
+			    	}
+			    	List<String> l=this.getDimensions();
+			    	for(int i=0;i<len;i++){
+			    		String dim= l.get(i);
+			    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
+			    			double dimSplitFac=this.getDimSplitFactor( dim, j);
+			    			if(dimSplitFac<min[i]){
+			    				min[i]=dimSplitFac;
+			    				split[i]=j;
+			    			}
+			    		}
+			    		Map<Keys,Values> newss=this.splitDimension(k, dim, split[i]);
+			    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
+			    		if(newss.size()>1){
+			    			adds.putAll(newss);
+			    			//将所有原有的keys添加到delKeys，并最终删除掉
+			    			delKeys.add(k);
+			    		}
+			    	}
+				}
+			}
+		}
+			
+		//删除被切分的分片和添加分出的分片
+		if(delKeys.size()>0){
+			for(Keys kk:delKeys){
+				this.fc.remove(kk);
+			}
+		}
+		if(adds.size()>0){
+			this.fc.putAll(adds);
+		}
 	}
 	/*
 	 * 更新filter cube中的每一行数据，判断留存或删除
@@ -265,12 +343,13 @@ public class FilterCube {
 			List<Data> dels=new ArrayList<Data>();
 			double releaseSpace=0;
 			double delNum=0;
+			int sum=datas.size();
 			for(Data d:datas){
 				/*
 				 * 这里暂时使用数据时间和数据使用次数作为删除数据的依据
 				 */
 				
-				if((SimClock.getTime()-d.getTime()>3600&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>7200&&d.getUsageCount()<5)){
+				if((SimClock.getTime()-d.getTime()>5400&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>7200&&d.getUsageCount()<5)){
 					dels.add(d);
 					releaseSpace=releaseSpace+d.getSize();
 					delNum=delNum+1;
@@ -278,14 +357,10 @@ public class FilterCube {
 					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
-				/*
-				 * 进行数据整合的代码
-				 */
-				
+				if(delNum/sum>0.05) break;
 			}
 			if(dels.size()>0){
 				datas.removeAll(dels);
-				System.out.println("正在删除数据。。。。");
 			}
 			this.numOfData=this.numOfData-delNum;
 			this.restSpace=this.restSpace+releaseSpace;
@@ -304,6 +379,7 @@ public class FilterCube {
 			List<Data> dels=new ArrayList<Data>();
 			double releaseSpace=0;
 			double delNum=0;
+			int sum=datas.size();
 			for(Data d:datas){
 				/*
 				 * 这里暂时使用数据时间作为删除数据的依据
@@ -317,6 +393,8 @@ public class FilterCube {
 					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
+				
+				if(delNum/sum>0.05) break;
 				/*
 				 * 进行数据整合的代码
 				 */
@@ -324,7 +402,6 @@ public class FilterCube {
 			}
 			if(dels.size()>0){
 				datas.removeAll(dels);
-				System.out.println("正在删除数据。。。。");
 			}
 			this.numOfData=this.numOfData-delNum;
 			this.restSpace=this.restSpace+releaseSpace;
@@ -410,7 +487,7 @@ public class FilterCube {
     							else if(t.getExpandState()==1) f.addUsedBlockDatas(1);
     						}
     						f.addUsedDatas(1);
-    						f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    						this.updateFilter(k, v);
     					}
     					//判断是否上传
     					if(t.getExpandState()==0&&sign==0){
@@ -676,20 +753,21 @@ public class FilterCube {
 	 * 这里暂时使用道路场景图像数据type==1先进行构建
 	 */
 	public double getMaxNumInDim(String dimension){
-		if(dimension.equals("Weather")) return 2;
+		if(dimension.equals("Weather")) return 3;
 		else if(dimension.equals("Time")) return 4;
-		else if(dimension.equals("TrafficCondition")) return 2;
-		else return 2*1024*1024;
+		else if(dimension.equals("TrafficCondition")) return 3;
+		else return 2;
 	}
 	/*
 	 * 获得filter cube 中的dimension 列表
 	 */
 	public List<String> getDimensions(){
 		List<String> l=new ArrayList<String>();
-		l.add("Weather");
-		l.add("Time");
-		l.add("TrafficCondition");
-		l.add("size");
+		for(Keys k:this.fc.keySet()){
+			l=k.getDimensions();
+			break;
+		}
+		if(l.size()==0) System.err.println("filter cube获取维度错误");
 		return l;
 	}
 	/*

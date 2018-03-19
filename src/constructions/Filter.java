@@ -193,7 +193,7 @@ public class Filter {
 		return (double)requests.size()/datas.size();
 	}
 	//¼ÆËãfilterµÄmistake factor
-	public double getMistakeFactor(List<Data>datas){
+	public double getMismatchFactor(List<Data>datas){
 		double res=0.5;
 		return res*(this.usedBlockDatas+this.unusedPassDatas)/datas.size();
 	}

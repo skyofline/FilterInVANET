@@ -1,6 +1,8 @@
 package constructions;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,6 +91,13 @@ public class Keys{
 		String res="该filter cube维度：\n";
 		for(String s:this.key.keySet()){
 			res=res+s+":最大值："+this.key.get(s).getMaxBord()+"最小值："+this.key.get(s).getMinBord()+"\n";
+		}
+		return res;
+	}
+	public List<String> getDimensions(){
+		List<String> res=new ArrayList<String>();
+		for(String s:this.getKey().keySet()){
+			res.add(s);
 		}
 		return res;
 	}

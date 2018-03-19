@@ -635,28 +635,26 @@ public class DTNHost implements Comparable<DTNHost> {
 				this.collectData();
 				
 			}
-		}	
+		}
+		if(this.time%300==1)
+		{
+			Random r=new Random(System.currentTimeMillis());
+			int i=r.nextInt(5);
+			
+			if(this.type==DTNHost.RSU_TYPE&&i>2){
+				this.collectData();
+			}
+		}
 		 
-//		if(this.time%18000==1&&this.time!=1){
-//			this.filterCube.updateDatas();
-//			this.filterCube.update();
-//		}
 		
 		//判断filter cube中的数据量是否过多，若是，则进行修改删除
-		if(this.filterCube.getRestSpace()/this.filterCube.fullSpace<0.12){
-			System.out.println(this.name+"的存储空间不足，正在删除以往filter和数据中。。。。。。。。");
+		if((double)this.filterCube.getRestSpace()/this.filterCube.fullSpace<0.05){
 			this.filterCube.updateDatas();
 		}
-//		if(this.filterCube.getNumOfData()/this.filterCube.getFC().size()>500){
-//			System.out.println(this.getName()+"内部正在更新filter cube整体");
-//			if(SimClock.getTime()-this.oldUpdateTime>1800){
-//				this.oldUpdateTime=SimClock.getTime();
-//				this.filterCube.update();
-//			}
-//		}
 		if(SimClock.getTime()-this.oldUpdateTime>3600){
 			this.oldUpdateTime=SimClock.getTime();
 			this.filterCube.update();
+			System.out.println(this.getName()+"正在更新filter cube");
 		}
 	}
 
@@ -851,7 +849,7 @@ public class DTNHost implements Comparable<DTNHost> {
 				}
 				
 			}else if(m.getType()==Message.Gener_Type) {	
-				System.out.println(this.getName()+"接收消息判断消息为一般消息,发送方为："+m.getFrom().name+"，接收方为："+m.getTo().name);
+//				System.out.println(this.getName()+"接收消息判断消息为一般消息,发送方为："+m.getFrom().name+"，接收方为："+m.getTo().name);
 			}else if(m.getType()==Message.Data_Transfer_Type){
 				this.processDataTransfer(m);
 //				System.out.println(this.getName()+ "接收消息判断消息为数据传送消息");
@@ -957,7 +955,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void createNewMessage(Message m) {
 		if(m.getType()==Message.Query_Type){
-			if(SimClock.getTime()>300) return;
+			if(SimClock.getTime()<300) return;
 			m.setReceiveQueryTime(SimClock.getTime()+MessageCenter.okTime);
 			//创建一条查询
 			Request q=this.createNewRequest();

@@ -60,7 +60,7 @@ public class MessageCenter {
     //有效距离
     public static double dis=500;
     //符合数据查询的时间间距长度
-    public static double okTime=300;
+    public static double okTime=450;
     //为类别为交通等数据的查询进行选择目的RSU
     public static DTNHost selectRSUForTraffic(Request q){
     	List<DTNHost> d=SimScenario.getInstance().getHosts();
