@@ -27,8 +27,8 @@ public class FilterCube {
 	/*
 	 * 这里存储输入参数
 	 */
-	public double fullSpace=5*1024*1024*1024;
-	private double restSpace=5*1024*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
+	public double fullSpace=5*1024*1024;
+	private double restSpace=5*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
 	
 	private double updateThreshold1=0.3;
 	private double updateThreshold2=2;
@@ -83,6 +83,7 @@ public class FilterCube {
     			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
     			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
     			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
+//    			this.updateFilter(k, this.fc.get(k));
     			break;
     		}else{
     			i++;
@@ -90,7 +91,7 @@ public class FilterCube {
     	}
   		if(i==ks.size()){
   			System.out.println(dtn.getName()+"向filter cube中插入数据失败！！！");
-  			System.out.println("失败数据："+d.toString());
+//  			System.out.println("失败数据："+d.toString());
   		}
   		else
   			this.numOfData=this.numOfData+1;
@@ -124,6 +125,7 @@ public class FilterCube {
     			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
     			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
     			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
+//    			this.updateFilter(k, this.fc.get(k));
     			break;
     		}else{
     			i++;
@@ -159,7 +161,6 @@ public class FilterCube {
 	}
     //更新filter cube中每一行的filter
 	public void update(){
-		double beginTime=SimClock.getTime();
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
 		Set<Keys> k=this.fc.keySet();
@@ -243,9 +244,6 @@ public class FilterCube {
 		if(adds.size()>0){
 			this.fc.putAll(adds);
 		}
-			
-		MessageCenter.filterCubeUpdateTime=SimClock.getTime()-beginTime;
-		MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
 	}
 	
 	/*
@@ -357,13 +355,14 @@ public class FilterCube {
 					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
-				if(delNum/sum>0.05) break;
+				if(delNum/sum>0.1) break;
 			}
 			if(dels.size()>0){
 				datas.removeAll(dels);
 			}
 			this.numOfData=this.numOfData-delNum;
 			this.restSpace=this.restSpace+releaseSpace;
+			
 		}
 	}
 	/*
@@ -394,7 +393,7 @@ public class FilterCube {
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
 				
-				if(delNum/sum>0.05) break;
+				if(delNum/sum>0.1) break;
 				/*
 				 * 进行数据整合的代码
 				 */
@@ -593,7 +592,7 @@ public class FilterCube {
     							else if(t.getExpandState()==1) f.addUsedBlockDatas(1);
     						}
     						f.addUsedDatas(1);
-    						f.updateStatusByRadioCost(v.getDatas(), v.getRequests());
+    						this.updateFilter(k, v);
     					}
     					res.add(t);
     				}
@@ -807,12 +806,6 @@ public class FilterCube {
 	public void setBalanceFactor(double balanceFactor) {
 		this.balanceFactor = balanceFactor;
 	}
-	public double getRestSpace(){
-		return this.restSpace;
-	}
-	public void setRestSpace(double s){
-		this.restSpace=s;
-	}
 	public double getNumOfData() {
 		return numOfData;
 	}
@@ -870,5 +863,17 @@ public class FilterCube {
 	}
 	public double getRestSpaceRate(){
 		return this.restSpace/this.fullSpace;
+	}
+	public void setFullSpace(double sp){
+		this.fullSpace=sp;
+	}
+	public double getFullSpace(){
+		return this.fullSpace;
+	}
+	public void setRestSpace(double rp){
+		this.restSpace=rp;
+	}
+	public double getRestSpace(){
+		return this.restSpace;
 	}
 }

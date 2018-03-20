@@ -12,6 +12,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import constructions.Data;
 import constructions.Filter;
 import constructions.FilterCube;
@@ -24,6 +27,7 @@ import routing.MessageRouter;
 import routing.util.RoutingInfo;
 
 public class Cloud {
+	public static final Logger logger=LogManager.getLogger(Cloud.class.getName());
 	private static Cloud myCloud=null;
 	//由于是云端，这里设置location 为null
 	private Coord location=null;
@@ -39,17 +43,18 @@ public class Cloud {
     private int type=2;//节点类型，包含一般节点（0）和RSU（1）还有cloud节点（2）
     private int time;//用来记录节点更新的次数
     //Cloud端传输速率，每秒
-    private double transferSpeed=1024*1024*10;
+    private double transferSpeed=1024*10;
     //评判filter作用的参数
     
     private long numOfQuery=0;//用来表示该节点接收到的query个数
     private long numOfRepliedQuery=0;//用来表示发送来的查询节点中已经有可以回复的数据的查询数量
     private double replyQueryTime=0;//用于统计RSU节点回复数据的时间
     private long numOfRepliedImmidia=0;//用于存储能够利用本地数据回复的查询的个数
+  //存储filter cube中更新filter各个维度的最新一次时间
+    private double oldUpdateTime=0;
     
-    
-    private double space=1024*1024*1024*100;//用来表示节点的存储空间大小
-    private double restSpace=1024*1024*4;//用来表示节点的剩余存小
+    private double space=10*1024*1024;//用来表示节点的存储空间大小
+    private double restSpace=10*1024*1024;//用来表示节点的剩余存小
     /*
      * 计算dimensional split factor的balanced factor,暂时假定为0.5
      */
@@ -57,14 +62,22 @@ public class Cloud {
     /*
      * FilterCube
      */
-    private FilterCube filterCube=new FilterCube();
+    private Map<Integer,FilterCube> filterCubes=new LinkedHashMap<Integer,FilterCube>();
     /*
      * Cloud 端初始化函数
      */
     public Cloud(){
     	this.createOrginFilterCube();
     	this.splitFilterCubeFirst();
-    	this.filterCube.showFilterCubeStruct();
+    	for(Integer types:this.filterCubes.keySet()){
+    		this.filterCubes.get(types).setFullSpace(this.space);
+    		this.filterCubes.get(types).setRestSpace(this.restSpace);
+    		if(types==2||types==3){
+    			this.filterCubes.get(types).setFullSpace(2*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(2*1024*1024);
+    		}
+//    		this.filterCubes.get(types).showFilterCubeStruct();
+    	}    	
     }
     /*
      * 下传数据到edge端
@@ -75,14 +88,21 @@ public class Cloud {
     	while(it.hasNext()){
     		DTNHost dtn=(DTNHost) it.next();
     		if(dtn.getType()==1&&d.getLocation().distance(dtn.getLocation())<MessageCenter.dis)
-    			dtn.getFilterCube().putData(d,dtn);
+    			dtn.getFilterCubes().get(d.getType()).putData(d,dtn);
     	}
     }
 
     //计算获取空间占用率
-    public double getRestSpaceRate(){
-    	return this.filterCube.getRestSpace()/this.filterCube.fullSpace;
-    }
+	public double getRestSpaceRate() {
+		// TODO Auto-generated method stub
+		double alls=0;
+		int nums=0;
+		nums=this.filterCubes.keySet().size();
+		for(Integer types:this.filterCubes.keySet()){
+    		alls=alls+this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace;
+    	}
+		return alls/nums;
+	}
     //计算满足率
     public double getReplyRate(){
     	if(this.numOfQuery==0) return 0;
@@ -101,49 +121,112 @@ public class Cloud {
      * 创建原始filter cube,这里暂时使用类别号为1 的类别
      */
     public void createOrginFilterCube(){
-    	Filter orginFilter=new Filter(1
+    	Filter orginFilter1=new Filter(1
     			,this.location,0,0);
-    	orginFilter.addDimension("Weather",0,2);
-    	orginFilter.addDimension("Time",0,4);
-    	orginFilter.addDimension("TrafficCondition",0,2);
-    	orginFilter.addDimension("Size",0.2*1024*1024,2*1024*1024);
-    	this.filterCube.addDimFrameByFilter(orginFilter);
+    	orginFilter1.addDimension("Weather",0,2);
+    	orginFilter1.addDimension("Time",0,4);
+    	orginFilter1.addDimension("TrafficCondition",0,2);
+    	orginFilter1.addDimension("Size",0.2*1024,2*1024);
+//    	System.out.println(orginFilter.toString());
+    	
     	//对原始filter cube进行切分以完成Filter Cube的建立过程
+    	Filter orginFilter0=new Filter(1
+    			,this.location,0,0);
+    	orginFilter0.addDimension("Duration",300,900);
+    	orginFilter0.addDimension("Situation",0,1);
+    	orginFilter0.addDimension("TrafficCondition",0,2);
+    	orginFilter0.addDimension("Size",51.5*300,51.5*900);
+    	
+    	Filter orginFilter2=new Filter(1
+    			,this.location,0,0);
+    	orginFilter2.addDimension("VehicleStatus",0,1);
+    	orginFilter2.addDimension("VehicleSpeed",0,49);
+    	orginFilter2.addDimension("Size",25,125);
+    	
+    	Filter orginFilter3=new Filter(1
+    			,this.location,0,0);
+    	orginFilter3.addDimension("SteeringWheelAngle",0,180);
+    	orginFilter3.addDimension("GasPedal",0,1);
+    	orginFilter3.addDimension("Size",10,25);
+    	
+    	Filter orginFilter4=new Filter(1
+    			,this.location,0,0);
+    	orginFilter4.addDimension("NumOfVehicles",0,9);
+    	orginFilter4.addDimension("LanePosition",0,2);
+    	orginFilter4.addDimension("Size",0.2*1024,2*1024);
+    	FilterCube f0=new FilterCube();
+    	FilterCube f1=new FilterCube();
+    	FilterCube f2=new FilterCube();
+    	FilterCube f3=new FilterCube();
+    	FilterCube f4=new FilterCube();
+    	f0.addDimFrameByFilter(orginFilter0);
+    	f1.addDimFrameByFilter(orginFilter1);
+    	f2.addDimFrameByFilter(orginFilter2);
+    	f3.addDimFrameByFilter(orginFilter3);
+    	f4.addDimFrameByFilter(orginFilter4);
+    	this.filterCubes.put(0, f0);
+    	this.filterCubes.put(1, f1);
+    	this.filterCubes.put(2, f2);
+    	this.filterCubes.put(3, f3);
+    	this.filterCubes.put(4, f4);
     }
     /*
      * 对filter cube进行切分
      */
     public void splitFilterCubeFirst(){
-    	//这里先是假设类别为一的数据，这里假设的数据维度为4
-    	int len=4;
-    	double[] min=new double[len];
-    	int[] split=new int[len];
-    	for(int i=0;i<len;i++){
-    		min[i]=1000000;
-    		split[i]=1;
-    	}
-    	Map<Keys,Values> addKV=new LinkedHashMap<Keys,Values>();
-    	Keys orginKey=null;
-    	for(Keys k:this.filterCube.getFC().keySet()){
-    		orginKey=k;
+    	for(Integer types:this.filterCubes.keySet()){
+    		//这里先是假设类别为一的数据，这里假设的数据维度为4
+    		int len=4;
+    		if(types==0||types==1) len=4;
+    		else if(types==2||types==3||types==4) len=3;
+    		double[] min=new double[len];
+    		int[] split=new int[len];
     		for(int i=0;i<len;i++){
-    			String dim=this.filterCube.getDimensions().get(i);
-    			for(int j=1;j<=this.filterCube.getMaxSplits(dim);j++){
-    				double dimSplitFac=this.getDimSplitFactor(this.filterCube, dim, j);
-    				if(dimSplitFac<min[i]){
-    					min[i]=dimSplitFac;
-    					split[i]=j;
+    			min[i]=1000000;
+    			split[i]=1;
+    		}
+    		Map<Keys,Values> addKV=new LinkedHashMap<Keys,Values>();
+    		List<Keys> orginKey=new ArrayList<Keys>();
+    		for(Keys k:this.filterCubes.get(types).getFC().keySet()){
+    			int befores=addKV.size();
+    			for(int i=0;i<len;i++){
+    				String dim=this.filterCubes.get(types).getDimensions().get(i);
+    				for(int j=1;j<=this.filterCubes.get(types).getMaxSplits(dim);j++){
+    					double dimSplitFac=this.getDimSplitFactor(this.filterCubes.get(types), dim, j);
+    					if(dimSplitFac<min[i]){
+    						min[i]=dimSplitFac;
+    						split[i]=j;
+    					}
     				}
-	    		}
-	    			
-    			Map<Keys,Values> newMap=this.filterCube.splitDimension(k, dim, split[i]);
-    			if(newMap!=null&&newMap.size()>1) addKV.putAll(newMap);
+    				Map<Keys,Values> newMap=this.filterCubes.get(types).splitDimension(k, dim, split[i]);
+    				if(newMap!=null&&newMap.size()>1){
+    					addKV.putAll(newMap);
+    				}
+    			}
+    			if(addKV.size()>befores) orginKey.add(k);
+    		}
+    		if(orginKey.size()>0&&addKV.size()>1){
+    			for(Keys t:orginKey) this.filterCubes.get(types).getFc().remove(t);
+    			this.filterCubes.get(types).getFc().putAll(addKV);
+    		}else{
+    			if(this.filterCubes.get(types).getFC().keySet().size()==1){
+    				Map<Keys,Values> addsNew=new LinkedHashMap<Keys,Values>();
+    				Keys news=null;
+    				for(Keys k:this.filterCubes.get(types).getFc().keySet()){
+    					news=k;
+    					for(int i=0;i<len;i++){
+    						Map<Keys,Values> newMap=this.filterCubes.get(types).splitDimension(k, this.filterCubes.get(types).getDimensions().get(i), 2);
+    						if(newMap.size()>1) addsNew.putAll(newMap);
+    					}
+    				}
+    				if(news!=null&&addsNew.size()>1){
+    					this.filterCubes.get(types).getFc().remove(news);
+    					this.filterCubes.get(types).getFC().putAll(addsNew);
+    				}
+    			}
     		}
     	}
-    	if(orginKey!=null&&addKV.size()>1){
-    		this.filterCube.getFc().remove(orginKey);
-    		this.filterCube.getFc().putAll(addKV);
-    	}
+
     	
     }
     /*
@@ -157,21 +240,24 @@ public class Cloud {
 	/*
 	 * 对filter cube进行更新
 	 */
-    public void updateFilterCube(){
-    	this.filterCube.update();
+    public void updateFilterCubes(){
+    	for(Integer types:this.filterCubes.keySet()){
+        	this.filterCubes.get(types).update();
+        }
     }
-    
-    //更新节点中的存储数据
-    public void updateDatas(){
-//    	System.out.println(this.name+" Updating datas...................");
-    	
-    	//若filter为空，则不作处理
-    	if (this.filters==null){
-    		return;
-    	}
-    	this.filterCube.updateDatas();
-
-    }
+//    
+//    //更新节点中的存储数据
+//    public void updateDatas(){
+////    	System.out.println(this.name+" Updating datas...................");
+//    	for(Integer types:this.filterCubes.keySet()){
+//    		if (this.filters==null){//若filter为空，则不作处理
+//    			return;
+//    		}
+//        	this.filterCubes.get(types).updateDatas();
+//        }
+//    	
+//  
+//    }
     
     //删除节点中存储的数据操作
     public void deleteData(Data noda){
@@ -223,8 +309,22 @@ public class Cloud {
 	 * @param simulateConnections Should network layer be updated too
 	 */
 	public void update() {
-		this.updateFilterCube();
-		if(this.getRestSpaceRate()<0.12) this.updateDatas();
+		for(Integer types:this.filterCubes.keySet()){
+			//判断filter cube中的数据量是否过多，若是，则进行修改删除
+			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<0.1){
+				this.filterCubes.get(types).updateDatas();
+			}
+			
+    	}
+		if(SimClock.getTime()-this.oldUpdateTime>3600){
+				this.oldUpdateTime=SimClock.getTime();
+				double beginTime=SimClock.getTime();
+				for(Integer types:this.filterCubes.keySet()){
+		    		this.filterCubes.get(types).update();
+		    	}
+				MessageCenter.filterCubeUpdateTime=SimClock.getTime()-beginTime;
+				MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
+		}
 	}
 	public double getBalanceFactor() {
 		return balanceFactor;
@@ -238,7 +338,7 @@ public class Cloud {
 	 */
 	public void receiveDataFromEdge(Data d){
 		d.setExpandState(1);
-		this.filterCube.putDataForCloud(d);
+		this.filterCubes.get(d.getType()).putDataForCloud(d);
 	}
 	public static Cloud getInstance(){
 		if(myCloud==null){
@@ -294,7 +394,7 @@ public class Cloud {
 		List<DTNHost> dtns=SimScenario.getInstance().getEdges();
 		for(DTNHost d:dtns){
 			if(d.getLocation().distance(r.getLocation())<MessageCenter.dis){
-				datas.addAll(d.getFilterCube().answerRequest(r,this));
+				datas.addAll(d.getFilterCubes().get(r.getType()).answerRequest(r,this));
 				if(datas.size()>0) return datas;
 			}
 		}
@@ -325,7 +425,7 @@ public class Cloud {
 				if(SimClock.getTime()-r.getTime()>MessageCenter.exitTime){
 					unreplied.add(m);
 				}else if(r.judgeData(d)){
-					this.filterCube.putDataForCloud(d);
+					this.filterCubes.get(d.getType()).putDataForCloud(d);
 					//然后数据传递到edge node，并处理之前无法回复的消息
 					m.getTo().workOnWaitMessage(d);
 					dels.add(m);
@@ -353,7 +453,7 @@ public class Cloud {
 			if(SimClock.getTime()-r.getTime()>MessageCenter.exitTime){
 				unreplied.add(m);
 			}else if(r.judgeData(d)){
-				this.filterCube.putDataForCloud(d);
+				this.filterCubes.get(d.getType()).putDataForCloud(d);
 				//然后数据传递到edge node，并处理之前无法回复的消息
 				m.getTo().workOnWaitMessage(d);
 				dels.add(m);
@@ -383,14 +483,14 @@ public class Cloud {
 	 * 回复查询
 	 */
 	public List<Data> answerRequest(Request r){
-		List<Data> d=this.filterCube.answerRequest(r,this);
-		return this.filterCube.answerRequest(r,this);
+		List<Data> d=this.filterCubes.get(r.getType()).answerRequest(r,this);
+		return d;
 	}
-	public void setFilterCube(FilterCube f){
-		this.filterCube=f;
+	public void setFilterCubes(Map<Integer,FilterCube> f){
+		this.filterCubes=f;
 	}
-	public FilterCube getFilterCube(){
-		return this.filterCube;
+	public Map<Integer,FilterCube> getFilterCubes(){
+		return this.filterCubes;
 	}
 	public double getTransferSpeed() {
 		return transferSpeed;

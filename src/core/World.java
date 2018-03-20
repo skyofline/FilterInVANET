@@ -170,18 +170,8 @@ public class World {
 
 		updateHosts();
 		this.time++;
-		//定期云端更新
-		if(this.time%1200==1&&this.time!=1){
-//			System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-//			for (int i=0, n = hosts.size();i < n; i++) {
-//				if (this.isCancelled) {
-//					break;
-//				}
-//				hosts.get(i).showEffect();
-//			}
-//			Cloud.getInstance().showEffect();
-			Cloud.getInstance().update();
-		}
+		//云端更新
+		Cloud.getInstance().update();
 		
 //		this.showCharam();
 		
@@ -348,7 +338,7 @@ public class World {
 				+",车辆成功接收回复的数量为："+MessageCenter.repliedQuerys
 				+",车辆中因为过期而失败的查询数量为："+allFailedMessages
 				+",仍然在车辆中等待数据回复的数量为："+allWaitMessages
-				+",进行filter cube更新所花费的时间为："+MessageCenter.filterCubeUpdateTime
+				+",进行filter cube更新所花费的平均时间为："+MessageCenter.filterCubeUpdateTime/MessageCenter.filterCubeUpdates
 				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates;
 
 		res=res+"\n====================="+SimClock.getTime()+"=============================\n";

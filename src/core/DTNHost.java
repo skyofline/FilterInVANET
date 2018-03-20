@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import constructions.Data;
 import constructions.Filter;
 import constructions.FilterCube;
@@ -32,7 +35,7 @@ import static core.Constants.DEBUG;
  * A DTN capable host.
  */
 public class DTNHost implements Comparable<DTNHost> {
-	
+	public static final Logger logger=LogManager.getLogger(DTNHost.class.getName());
 	private static int nextAddress = 0;
 	private int address;
 
@@ -87,7 +90,7 @@ public class DTNHost implements Comparable<DTNHost> {
     /*
      * FilterCube
      */
-    private FilterCube filterCube=new FilterCube();
+    private Map<Integer,FilterCube> filterCubes=new LinkedHashMap<Integer,FilterCube>();
     /*
      * 创建原始filter cube,这里暂时使用类别号为1 的类别
      */
@@ -97,88 +100,108 @@ public class DTNHost implements Comparable<DTNHost> {
     	orginFilter1.addDimension("Weather",0,2);
     	orginFilter1.addDimension("Time",0,4);
     	orginFilter1.addDimension("TrafficCondition",0,2);
-    	orginFilter1.addDimension("Size",0.2*1024*1024,2*1024*1024);
+    	orginFilter1.addDimension("Size",0.2*1024,2*1024);
 //    	System.out.println(orginFilter.toString());
-    	this.filterCube.addDimFrameByFilter(orginFilter1);
+    	
     	//对原始filter cube进行切分以完成Filter Cube的建立过程
     	Filter orginFilter0=new Filter(1
     			,this.location,0,0);
     	orginFilter0.addDimension("Duration",300,900);
     	orginFilter0.addDimension("Situation",0,1);
     	orginFilter0.addDimension("TrafficCondition",0,2);
-    	orginFilter0.addDimension("Size",51.5*1024*300,51.5*1024*900);
+    	orginFilter0.addDimension("Size",51.5*300,51.5*900);
     	
     	Filter orginFilter2=new Filter(1
     			,this.location,0,0);
     	orginFilter2.addDimension("VehicleStatus",0,1);
     	orginFilter2.addDimension("VehicleSpeed",0,49);
-    	orginFilter2.addDimension("Size",25*1024,125*1024);
+    	orginFilter2.addDimension("Size",25,125);
     	
     	Filter orginFilter3=new Filter(1
     			,this.location,0,0);
     	orginFilter3.addDimension("SteeringWheelAngle",0,180);
     	orginFilter3.addDimension("GasPedal",0,1);
-    	orginFilter3.addDimension("Size",10*1024,25*1024);
+    	orginFilter3.addDimension("Size",10,25);
     	
     	Filter orginFilter4=new Filter(1
     			,this.location,0,0);
     	orginFilter4.addDimension("NumOfVehicles",0,9);
     	orginFilter4.addDimension("LanePosition",0,2);
-    	orginFilter4.addDimension("Size",0.2*1024*1024,2*1024*1024);
+    	orginFilter4.addDimension("Size",0.2*1024,2*1024);
+    	FilterCube f0=new FilterCube();
+    	FilterCube f1=new FilterCube();
+    	FilterCube f2=new FilterCube();
+    	FilterCube f3=new FilterCube();
+    	FilterCube f4=new FilterCube();
+    	f0.addDimFrameByFilter(orginFilter0);
+    	f1.addDimFrameByFilter(orginFilter1);
+    	f2.addDimFrameByFilter(orginFilter2);
+    	f3.addDimFrameByFilter(orginFilter3);
+    	f4.addDimFrameByFilter(orginFilter4);
+    	this.filterCubes.put(0, f0);
+    	this.filterCubes.put(1, f1);
+    	this.filterCubes.put(2, f2);
+    	this.filterCubes.put(3, f3);
+    	this.filterCubes.put(4, f4);
     }
     /*
      * 对filter cube进行切分
      */
     public void splitFilterCubeFirst(){
-    	//这里先是假设类别为一的数据，这里假设的数据维度为4
-    	int len=4;
-    	double[] min=new double[len];
-    	int[] split=new int[len];
-    	for(int i=0;i<len;i++){
-    		min[i]=1000000;
-    		split[i]=1;
-    	}
-    	Map<Keys,Values> addKV=new LinkedHashMap<Keys,Values>();
-    	List<Keys> orginKey=new ArrayList<Keys>();
-    	for(Keys k:this.filterCube.getFC().keySet()){
-    		int befores=addKV.size();
+    	for(Integer types:this.filterCubes.keySet()){
+    		FilterCube filtercube=this.filterCubes.get(types);
+    		//这里先是假设类别为一的数据，这里假设的数据维度为4
+    		int len=4;
+    		if(types==0||types==1) len=4;
+    		else if(types==2||types==3||types==4) len=3;
+    		double[] min=new double[len];
+    		int[] split=new int[len];
     		for(int i=0;i<len;i++){
-    			String dim=this.filterCube.getDimensions().get(i);
-    			for(int j=1;j<=this.filterCube.getMaxSplits(dim);j++){
-    				double dimSplitFac=this.getDimSplitFactor(this.filterCube, dim, j);
-    				if(dimSplitFac<min[i]){
-    					min[i]=dimSplitFac;
-    					split[i]=j;
-    				}
-	    		}
-    			Map<Keys,Values> newMap=this.filterCube.splitDimension(k, dim, split[i]);
-    			if(newMap!=null&&newMap.size()>1){
-    				addKV.putAll(newMap);
-    			}
+    			min[i]=1000000;
+    			split[i]=1;
     		}
-    		if(addKV.size()>befores) orginKey.add(k);
-    	}
-    	if(orginKey.size()>0&&addKV.size()>1){
-    		for(Keys t:orginKey) this.filterCube.getFc().remove(t);
-    		this.filterCube.getFc().putAll(addKV);
-    	}else{
-    		if(this.filterCube.getFC().keySet().size()==1){
-    			Map<Keys,Values> addsNew=new LinkedHashMap<Keys,Values>();
-    			Keys news=null;
-    			for(Keys k:this.filterCube.getFc().keySet()){
-    				news=k;
-    				for(int i=0;i<len;i++){
-    					Map<Keys,Values> newMap=this.filterCube.splitDimension(k, this.filterCube.getDimensions().get(i), 2);
-    					if(newMap.size()>1) addsNew.putAll(newMap);
+    		Map<Keys,Values> addKV=new LinkedHashMap<Keys,Values>();
+    		List<Keys> orginKey=new ArrayList<Keys>();
+    		for(Keys k:filtercube.getFC().keySet()){
+    			int befores=addKV.size();
+    			for(int i=0;i<len;i++){
+    				String dim=filtercube.getDimensions().get(i);
+    				for(int j=1;j<=filtercube.getMaxSplits(dim);j++){
+    					double dimSplitFac=this.getDimSplitFactor(filtercube, dim, j);
+    					if(dimSplitFac<min[i]){
+    						min[i]=dimSplitFac;
+    						split[i]=j;
+    					}
+    				}
+    				Map<Keys,Values> newMap=filtercube.splitDimension(k, dim, split[i]);
+    				if(newMap!=null&&newMap.size()>1){
+    					addKV.putAll(newMap);
     				}
     			}
-    			if(news!=null&&addsNew.size()>1){
-    				this.filterCube.getFc().remove(news);
-    				this.filterCube.getFC().putAll(addsNew);
+    			if(addKV.size()>befores) orginKey.add(k);
+    		}
+    		if(orginKey.size()>0&&addKV.size()>1){
+    			for(Keys t:orginKey) filtercube.getFc().remove(t);
+    			filtercube.getFc().putAll(addKV);
+    		}else{
+    			if(filtercube.getFC().keySet().size()==1){
+    				Map<Keys,Values> addsNew=new LinkedHashMap<Keys,Values>();
+    				Keys news=null;
+    				for(Keys k:filtercube.getFc().keySet()){
+    					news=k;
+    					for(int i=0;i<len;i++){
+    						Map<Keys,Values> newMap=filtercube.splitDimension(k, filtercube.getDimensions().get(i), 2);
+    						if(newMap.size()>1) addsNew.putAll(newMap);
+    					}
+    				}
+    				if(news!=null&&addsNew.size()>1){
+    					filtercube.getFc().remove(news);
+    					filtercube.getFC().putAll(addsNew);
+    				}
     			}
-    			
     		}
     	}
+
     	
     }
     /*
@@ -190,35 +213,31 @@ public class DTNHost implements Comparable<DTNHost> {
     	return res;
     }
 	/*
-	 * 对filter cube进行更新
+	 * 对filter cubes进行更新
 	 */
-    public void updateFilterCube(){
-    	
-    	this.filterCube.update();
+    public void updateFilterCubes(){
+    	for(Integer types:this.filterCubes.keySet()){
+    		this.filterCubes.get(types).update();
+    	}
     }
     
-    /*
-     * 对filter cube中的数据进行更新
-     * 更新节点中的存储数据
-     */
-    public void updateDatas(){
-    	this.filterCube.updateDatas();
-    }
+
 
     
 
     //模拟采集数据，这里自动生成数据
     public void collectData(){
     	Random r=new Random(System.currentTimeMillis());
-    	//int type=r.nextInt(5);
-    	int type=1;
-        int level=r.nextInt(2);
-        String content="null";
+    	int type=r.nextInt(5);
+    	if(type<0) type=0;
+    	if(type>4) type=4;
+    	int level=r.nextInt(2);
+    	String content="null";
     	Data d=new Data(SimClock.getTime(),this.address,type,level,content,this.location);
     	d.fillData();
     	//当数据产生后，可将数据加入到filter cube中
-    	this.filterCube.putData(d,this); 
-    	this.uploadDataToEdge(d);
+    	this.filterCubes.get(type).putData(d,this); 
+    	if(this.getType()==DTNHost.CAR_TYPE)this.uploadDataToEdge(d);
     }
 	public Data collectDataForRequest(Request r){
 		String content=null;
@@ -327,7 +346,13 @@ public class DTNHost implements Comparable<DTNHost> {
 		//初始化创建filtercube
 		this.createOrginFilterCube();
 		this.splitFilterCubeFirst();
-		this.filterCube.showFilterCubeStruct();
+		for(Integer types:this.filterCubes.keySet()){
+    		this.filterCubes.get(types).showFilterCubeStruct();
+    		if(types==2||types==3){
+    			this.filterCubes.get(types).setFullSpace(1*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(1*1024*1024);
+    		}
+    	}
 		//生成dtnHost时添加轨迹数据
 		if(DTNSim.getTracks().size()>0){
 			if(DTNSim.getTracks().get(Integer.toString(this.address))!=null){
@@ -385,7 +410,13 @@ public class DTNHost implements Comparable<DTNHost> {
 		//初始化创建filtercube
 		this.createOrginFilterCube();
 		this.splitFilterCubeFirst();
-		this.filterCube.showFilterCubeStruct();
+		for(Integer types:this.filterCubes.keySet()){
+    		this.filterCubes.get(types).showFilterCubeStruct();
+    		if(types==2||types==3){
+    			this.filterCubes.get(types).setFullSpace(1*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(1*1024*1024);
+    		}
+    	}
 		//生成dtnHost时添加轨迹数据
 		if(DTNSim.getTracks().size()>0){
 			if(DTNSim.getTracks().get(Integer.toString(this.address))!=null){
@@ -646,7 +677,7 @@ public class DTNHost implements Comparable<DTNHost> {
 			return;
 		}
 		this.time=this.time+1;
-//		if(this.time>1000000) this.time=this.time-1000000;
+		if(this.time>1000000) this.time=this.time-1000000;
 		if (simulateConnections) {
 			for (NetworkInterface i : net) {
 				i.update();
@@ -660,25 +691,29 @@ public class DTNHost implements Comparable<DTNHost> {
 				
 			}
 		}
-		if(this.time%300==1)
+		if(this.time%450==1)
 		{
-			Random r=new Random(System.currentTimeMillis());
-			int i=r.nextInt(5);
-			
-			if(this.type==DTNHost.RSU_TYPE&&i>2){
+			if(this.type==DTNHost.RSU_TYPE){
 				this.collectData();
 			}
 		}
 		 
-		
-		//判断filter cube中的数据量是否过多，若是，则进行修改删除
-		if((double)this.filterCube.getRestSpace()/this.filterCube.fullSpace<0.05){
-			this.filterCube.updateDatas();
-		}
+		for(Integer types:this.filterCubes.keySet()){
+			//判断filter cube中的数据量是否过多，若是，则进行修改删除
+			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<0.1){
+				this.filterCubes.get(types).updateDatas();
+			}
+			
+    	}
 		if(SimClock.getTime()-this.oldUpdateTime>3600){
-			this.oldUpdateTime=SimClock.getTime();
-			this.filterCube.update();
-			System.out.println(this.getName()+"正在更新filter cube");
+				this.oldUpdateTime=SimClock.getTime();
+				double beginTime=SimClock.getTime();
+				for(Integer types:this.filterCubes.keySet()){
+		    		this.filterCubes.get(types).update();
+		    	}
+				
+				MessageCenter.filterCubeUpdateTime+=SimClock.getTime()-beginTime;
+				MessageCenter.filterCubeUpdates=MessageCenter.filterCubeUpdates+1;
 		}
 	}
 
@@ -817,7 +852,7 @@ public class DTNHost implements Comparable<DTNHost> {
 				if(this.getType()==1) m.setReceiveQueryTime(SimClock.getTime());
 				this.addMessageToWaitMessage(m);
 				Request q=(Request) m.getProperty("Query");
-				System.out.println("DTNHost中接收消息判断消息类型为查询消息，发送方为："+m.getFrom().name+"，接收方为："+m.getTo().name);
+				logger.info("DTNHost中接收消息判断消息类型为查询消息，发送方为："+m.getFrom().name+"，接收方为："+m.getTo().name);
 				
 				
 				//处理消息查询,创建回复消息
@@ -830,7 +865,7 @@ public class DTNHost implements Comparable<DTNHost> {
 				 */
 				if(processQuery(m)==1){  
 					if(m.getTo().getType()==1){//rsu
-						System.out.println(this.name+"已经发出回复（包含数据）以响应来自"+m.getFrom().name+"的查询");
+						logger.info(this.name+"已经发出回复（包含数据）以响应来自"+m.getFrom().name+"的查询");
 					}
 //					else if(m.getTo().getType()==0){//r车辆
 //						System.out.println(this.name+"已经成功发出数据给"+m.getFrom().name);
@@ -843,7 +878,7 @@ public class DTNHost implements Comparable<DTNHost> {
 					if(this.getType()==1) {
 //						if(q.getType()==0)this.numOfQuery++;
 						//此时为RSU节点，进行操作,将没有回复的message保存到数组中，留待下一次的处理
-						System.out.println(this.name+"中没有数据可供"+m.getFrom().name+"查询，将消息存入等待队列中...");
+//						System.out.println(this.name+"中没有数据可供"+m.getFrom().name+"查询，将消息存入等待队列中...");
 						if(q!=null && !this.waitMessages.contains(m)){
 							this.addMessageToWaitDataMessage(m);
 						}
@@ -878,20 +913,22 @@ public class DTNHost implements Comparable<DTNHost> {
 				this.processDataTransfer(m);
 //				System.out.println(this.getName()+ "接收消息判断消息为数据传送消息");
 			}else if(m.getType()==Message.Pull_Data_Type){
-				System.out.println(this.getName()+"接收消息处理，消息为拉取数据消息");
+				logger.info(this.getName()+"接收消息处理，消息为拉取数据消息");
 				//当接收到拉取数据的消息是车辆时，说明要获取数据并回复
 				if(this.getType()==0){
+					Request r=(Request) m.getProperty("Query");
+					if(r==null) System.err.println("Wrong,No request");
 					Message ret=new Message(m.getTo(), m.getFrom(), "Reply"+m.getId(), 1024*100,Message.Pull_Data_Type);
-					List<Data> ds=this.filterCube.answerRequest((Request) m.getProperty("Query"),this);
+					List<Data> ds=this.filterCubes.get(r.getType()).answerRequest(r,this);
 					if(ds.size()>0){
-						System.out.println("车辆回复拉取数据消息，共回复数据"+ds.size()+"条");
+						logger.info("车辆回复拉取数据消息，共回复数据"+ds.size()+"条");
 						for(int i=0;i<ds.size();i++){
 							ret.addProperty("Data"+i+System.currentTimeMillis(), ds.get(i));
 						}
 						this.createNewMessage(ret);
 					}else{
-						System.out.println("车辆中不包含可回复数据，利用传感器等主动捕捉数据");
-						Data d=this.collectDataForRequest((Request) m.getProperty("Query"));
+//						System.out.println("车辆中不包含可回复数据，利用传感器等主动捕捉数据");
+						Data d=this.collectDataForRequest(r);
 						ret.addProperty("Data0"+System.currentTimeMillis(), d);
 						this.createNewMessage(ret);
 					}
@@ -900,7 +937,7 @@ public class DTNHost implements Comparable<DTNHost> {
 				}else if(this.getType()==1){
 					//如果该节点是rsu edge节点，说明发起拉起数据的rsu接收到车辆发送过来的相关数据，
 					//然后对数据进行处理，将数据传送给cloud端进行处理
-					System.out.println(this.getName()+"接收到拉取数据返回消息");
+//					System.out.println(this.getName()+"接收到拉取数据返回消息");
 					Data d=null;
 					for(String key:m.getProKeys()){
 						if(key.contains("Data")){
@@ -908,26 +945,25 @@ public class DTNHost implements Comparable<DTNHost> {
 						}
 					}
 					if(d!=null)
-						this.filterCube.putData(d,this);
-					List<Message> dels=new ArrayList<Message>();
+						this.filterCubes.get(d.getType()).putData(d,this);
+						List<Message> dels=new ArrayList<Message>();
 						for(Message mt:this.waitDataMessages){
 							Request r=(Request) mt.getProperty("Query");
 							if(r.judgeData(d)){
 								if(mt.getTo().getAddress()==this.getAddress()){
-									this.filterCube.putData(d,this);
 									Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
 									ret.addProperty("Data"+0+System.currentTimeMillis(), d);
 									ret.setSize((int)d.getSize());	
 									this.createNewMessage(ret);
 									this.numOfRepliedQuery++;			
-									System.out.println(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
+									logger.info(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
 									dels.add(mt);
 								}else{
 									Cloud.getInstance().workOnWaitMessage(d);
 									dels.add(mt);
 								}
 							}
-							this.filterCube.putRequest(r);
+							this.filterCubes.get(d.getType()).putRequest(r);
 						}
 					this.waitDataMessages.remove(dels);
 					
@@ -1084,10 +1120,12 @@ public class DTNHost implements Comparable<DTNHost> {
      */
     public int processQuery(Message m){
     	Request q=(Request) m.getProperty("Query");
+    	int type=q.getType();//得出要查询的数据类别
+    	FilterCube filtercube=this.filterCubes.get(type);
     	//如果消息中含有查询语句，通过遍历RSU中的data 的list，判断数据data的类型是否与query中的相同，
    		//若是，则加入到返回消息中，最后创建返回消息。
    		if(q!=null){
-    		List<Data> datas=this.filterCube.answerRequest(q,this);
+    		List<Data> datas=filtercube.answerRequest(q,this);
     	
     		Message ret=new Message(m.getTo(), m.getFrom(), "Reply"+m.getId(), 1024*100,Message.Reply_Type);
     		double sizes=0;
@@ -1101,7 +1139,7 @@ public class DTNHost implements Comparable<DTNHost> {
     		ret.setSize((int)sizes);
     		//如果rsu查询的数据可以回复消息，则创建回复消息
     		if(datas.size()>0){
-    			System.out.println(this.getName()+"可以回复查询");
+//    			logger.info(this.getName()+"可以回复查询");
     			//如果是RSU节点，则添加回复查询事件
     			if(this.getType()==DTNHost.RSU_TYPE){
     				m.setReceiveReplyTime(SimClock.getTime());
@@ -1121,11 +1159,11 @@ public class DTNHost implements Comparable<DTNHost> {
     			Message mes=m.replicate();
     			mes.setReceiveQueryTime(SimClock.getTime());
     			List<Data> ds=Cloud.getInstance().answerRequest(q);
-    			Cloud.getInstance().getFilterCube().putRequest(q);
+    			Cloud.getInstance().getFilterCubes().get(q.getType()).putRequest(q);
     			Cloud.getInstance().addNumOfQuery();
     			//如果云端获取相应的数据，则将数据发送至接收查询的节点储存，然后重新处理该查询
     			if(ds.size()>0){
-    				for(Data da:ds) this.filterCube.putData(da,this);
+    				for(Data da:ds) filtercube.putData(da,this);
     	    		for(Data s:ds){
     	    			//将数据放入回复消息中
     	    			ret.addProperty("Data"+i+System.currentTimeMillis(), s);
@@ -1136,7 +1174,7 @@ public class DTNHost implements Comparable<DTNHost> {
     	    		mes.setTranTimeRAC(m.getTranTimeRAC()+Cloud.getInstance().getTransferTime(sizes));
     	    		mes.setReceiveReplyTime(SimClock.getTime());
     	    		ret.setSize((int)sizes);
-    	    		System.out.println("云端可回应来自"+mes.getTo().getName()+"的查询");
+//    	    		System.out.println("云端可回应来自"+mes.getTo().getName()+"的查询");
     	    		if(this.getType()==DTNHost.RSU_TYPE){
     	    			this.replyQueryTime+=SimClock.getTime()-rsuQueryTime+mes.getTranTimeRAC();
     	    		}
@@ -1154,8 +1192,8 @@ public class DTNHost implements Comparable<DTNHost> {
     				//如果云端成功获取数据，将数据存入云端，否则，查询失败
     				if(ds.size()>0){
     					for(Data d:ds){
-    						Cloud.getInstance().getFilterCube().putData(d,this);
-    						this.filterCube.putData(d,this);
+    						Cloud.getInstance().getFilterCubes().get(d.getType()).putData(d,this);
+    						filtercube.putData(d,this);
     					}
     					for(Data s:ds){
     						//将数据放入回复消息中
@@ -1167,7 +1205,7 @@ public class DTNHost implements Comparable<DTNHost> {
         	    		mes.setTranTimeRAC(mes.getTranTimeRAC()+Cloud.getInstance().getTransferTime(sizes));
         	    		mes.setReceiveReplyTime(SimClock.getTime());
     					ret.setSize((int)sizes);
-    					System.out.println("云端从相应edge node中获取数据回复来自"+mes.getTo().getName()+"的查询");
+//    					System.out.println("云端从相应edge node中获取数据回复来自"+mes.getTo().getName()+"的查询");
     					if(this.getType()==DTNHost.RSU_TYPE){
         	    			this.replyQueryTime+=SimClock.getTime()-rsuQueryTime+mes.getTranTimeRAC();
         	    		}
@@ -1199,24 +1237,26 @@ public class DTNHost implements Comparable<DTNHost> {
     //相应处理回复函数，从回复消息中获取数据并存入节点中的datas
     public void processReply(Message m){
     	
-    	System.out.println(this.getName()+"正在接收回复。。。。");
+    	logger.info(this.getName()+"正在接收回复。。。。");
     	Set<String> keys=m.getProKeys();
     	int size=0;
     	for(String s:keys){
     		//判断消息中的属性列表中是否包含数据
     		if(s.contains("Data")) {
-    			Data nd=(Data) m.getProperty(s);  
+    			Data nd=(Data) m.getProperty(s);
+    			FilterCube filtercube=this.filterCubes.get(nd.getType());
     			//如果消息中包含数据，则存储到RSU的filterCube中
     			List<Message> delMessage=new ArrayList<>();
     			for(Message mes:this.waitMessages){
     				if(SimClock.getTime()-mes.getCreationTime()>MessageCenter.exitTime){
     					delMessage.add(mes);
     					this.failedMessages++;
+    					logger.info(this.getName()+"中的一条查询消息过期");
     				}
     				else{
     					Request r=(Request) mes.getProperty("Query");
     					if(r.judgeData(nd)){
-    						this.filterCube.putRequest(r);
+    						filtercube.putRequest(r);
     						this.replyQueryTime=this.replyQueryTime+SimClock.getTime()-r.getTime()+mes.getTranTimeRAC();
     						this.numOfRepliedQuery++;
     						delMessage.add(mes);
@@ -1229,15 +1269,12 @@ public class DTNHost implements Comparable<DTNHost> {
     			}
     			this.waitMessages.removeAll(delMessage);
     			  				
-    			this.filterCube.putData(nd,this);
+    			filtercube.putData(nd,this);
 //    			System.out.println("来自"+m.getFrom().name+"发往"+m.getTo().name+
 //    					"消息类型为"+m.getType()+",data的数据信息为："+m.getProperty(s).toString());
     			size=size+1;
     		}
     	}
-    	System.out.println("==================================="+m.getTo().name+"共收到来自"+m.getFrom()
-    	.name+"的"+size+"条数据");
-  
     }
     
     /*
@@ -1252,26 +1289,26 @@ public class DTNHost implements Comparable<DTNHost> {
     		}
     	}
     	if(d!=null){
-    		this.filterCube.putData(d,this);
+    		this.filterCubes.get(d.getType()).putData(d,this);
     		List<Message> dels=new ArrayList<Message>();
 			for(Message mt:this.waitDataMessages){
 				Request r=(Request) mt.getProperty("Query");
 				if(r.judgeData(d)){
 					if(mt.getTo().getAddress()==this.getAddress()){
-						this.filterCube.putData(d,this);
+//						this.filterCubes.get(r.getType()).putData(d,this);
 						Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
 						ret.addProperty("Data"+0+System.currentTimeMillis(), d);
 						ret.setSize((int)d.getSize());	
 						this.createNewMessage(ret);
 						this.numOfRepliedQuery++;			
-						System.out.println(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
+						logger.info(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
 						dels.add(mt);
 					}else{
 						Cloud.getInstance().workOnWaitMessage(d);
 						dels.add(mt);
 					}
 				}
-				this.filterCube.putRequest(r);
+				this.filterCubes.get(r.getType()).putRequest(r);
 			}
 			this.waitDataMessages.remove(dels);
     	}
@@ -1303,8 +1340,8 @@ public class DTNHost implements Comparable<DTNHost> {
 	}
 	//周期性的更新filter的阈值
 	public void updataFilterThresh(){
-		List<Filter> delf=new ArrayList();
-		List<Filter> addf=new ArrayList();
+		List<Filter> delf=new ArrayList<Filter>();
+		List<Filter> addf=new ArrayList<Filter>();
 		for(Filter f:this.filters){
 			delf.add(f);
 			//根据一段时间内的查询次数修改filter阈值，
@@ -1322,7 +1359,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void putDatas(List<Data> ds){
 		for(Data d:ds){
-			this.filterCube.putData(d,this);
+			this.filterCubes.get(d.getType()).putData(d,this);
 		}
 	}
 //	//RSU处理来自云端的查询消息
@@ -1422,8 +1459,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	//创建Request,(随机生成数据地点，利用云端的edge节点)
 	public Request createNewRequest(){
 		Random r=new Random(System.currentTimeMillis());
-//		int type=r.nextInt(5);
-		int type=1;
+		int type=r.nextInt(5);
 		int level=r.nextInt(2);
 		Coord c=Cloud.getInstance().getRandLocation();
 		double time=SimClock.getTime();
@@ -1452,20 +1488,22 @@ public class DTNHost implements Comparable<DTNHost> {
 			Request r=(Request) m.getProperty("Query");
 			if(r.judgeData(d)){
 //				System.out.println("正在创建回复查询消息。。。。。");
-				this.filterCube.putData(d,this);
 				Message ret=new Message(m.getTo(), m.getFrom(), "Reply"+m.getId(), 1024*100,Message.Reply_Type);
 	    		ret.addProperty("Data"+0+System.currentTimeMillis(), d);
 	    		ret.setSize((int)d.getSize());	
 	    		this.createNewMessage(ret);
 	    		this.numOfRepliedQuery++;
 				dels.add(m);
+				logger.info(m.getTo().name+"成功回复了来自"+m.getFrom().name+"的查询******************************");
+				this.filterCubes.get(r.getType()).putRequest(r);
 			}
-			System.out.println(m.getTo().name+"成功回复了来自"+m.getFrom().name+"的查询******************************");
-			this.filterCube.putData(d,this);
-			this.filterCube.putRequest(r);
+			
 			
 		}
-		this.waitDataMessages.remove(dels);
+		if(dels.size()>0){
+			this.filterCubes.get(d.getType()).putData(d,this);
+			this.waitDataMessages.remove(dels);
+		}
 	}
 	//添加查询消息到消息列表中，同时接收的查询数加一
 	public void addMessageToWaitMessage(Message m){
@@ -1484,12 +1522,6 @@ public class DTNHost implements Comparable<DTNHost> {
 	}
 	public void setBalanceFactor(double balanceFactor) {
 		this.balanceFactor = balanceFactor;
-	}
-	public FilterCube getFilterCube() {
-		return filterCube;
-	}
-	public void setFilterCube(FilterCube filterCube) {
-		this.filterCube = filterCube;
 	}
 
 	public void showEffect(){
@@ -1511,7 +1543,13 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public double getRestSpaceRate() {
 		// TODO Auto-generated method stub
-		return this.filterCube.getRestSpace()/this.filterCube.fullSpace;
+		double alls=0;
+		int nums=0;
+		nums=this.filterCubes.keySet().size();
+		for(Integer types:this.filterCubes.keySet()){
+    		alls=alls+this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace;
+    	}
+		return alls/nums;
 	}
 	/*
 	 * 返回消息查询平均时间
@@ -1572,5 +1610,11 @@ public class DTNHost implements Comparable<DTNHost> {
 	}
 	public List<Message> getWaitMessage(){
 		return this.waitMessages;
+	}
+	public Map<Integer,FilterCube> getFilterCubes(){
+		return this.filterCubes;
+	}
+	public void setFilterCubes(Map<Integer,FilterCube> fs){
+		this.filterCubes=fs;
 	}
 }

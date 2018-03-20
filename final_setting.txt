@@ -142,17 +142,17 @@ MapBasedMovement.mapFile1 = data/xiamen1.wkt
 ## Reports - all report names have to be valid report classes
 
 # how many reports to load
-Report.nrofReports = 5
+Report.nrofReports = 1
 # length of the warm up period (simulated seconds)
 Report.warmup = 0
 # default directory of reports (can be overridden per Report with output setting)
 Report.reportDir = reports/
 # Report classes to load
-Report.report1 = DeliveredMessagesReport
-Report.report2 = MessageDeliveryReport
-Report.report3 = CreatedMessagesReport
-Report.report4 = MessageReport
-Report.report5 = JudgeCharamReport
+#Report.report1 = DeliveredMessagesReport
+#Report.report2 = MessageDeliveryReport
+#Report.report3 = CreatedMessagesReport
+#Report.report4 = MessageReport
+Report.report1 = JudgeCharamReport
 ## Default settings for some routers settings
 ProphetRouter.secondsInTimeUnit = 30
 SprayAndWaitRouter.nrofCopies = 20

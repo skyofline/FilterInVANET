@@ -54,7 +54,7 @@ public class Data {
 			long seed=System.currentTimeMillis();
 			//根据随机生成的视频时长来生成视频大小
 			//暂时假设1秒钟有51.5KB大小
-			double sizes=51.5*1024*lenOfTime;
+			double sizes=51.5*lenOfTime;
 			
 			this.size=sizes;
 			this.dims.put("Size",this.size);
@@ -89,7 +89,7 @@ public class Data {
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;
-			this.size=sizes*1024*1024;
+			this.size=sizes*1024;
 			this.dims.put("Size",this.size);
 
 		}else if(type==2){
@@ -105,7 +105,7 @@ public class Data {
 			this.dims.put("VehicleSpeed", (double)speeds);
 			//随机生成数据大小（25KB-125KB)
 			int sizes=r.nextInt(100)+25;
-			this.size=sizes*1024;
+			this.size=sizes;
 			this.dims.put("Size",this.size);
 
 		}else if(type==3){
@@ -121,7 +121,7 @@ public class Data {
 			this.dims.put("GasPedal", degree);
 			//随机生成数据大小(10-25KB)
 			int sizes=r.nextInt(15)+10;
-			this.size=sizes*1024;
+			this.size=sizes;
 			this.dims.put("Size",this.size);
 
 		}else if(type==4){
@@ -138,7 +138,7 @@ public class Data {
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;
-			this.size=sizes*1024*1024;
+			this.size=sizes*1024;
 			this.dims.put("Size",this.size);
 
 		}
