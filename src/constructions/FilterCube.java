@@ -30,7 +30,7 @@ public class FilterCube {
 	public double fullSpace=5*1024*1024*1024;
 	private double restSpace=5*1024*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
 	
-	private double updateThreshold1=0.5;
+	private double updateThreshold1=0.3;
 	private double updateThreshold2=2;
 	//判断存储空间是否更新的阈值
 	private double spaceThreshold=0.05;

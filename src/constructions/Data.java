@@ -35,7 +35,9 @@ public class Data {
 		if(type==0){
 			Random r=new Random(System.currentTimeMillis());
 			//随机生成视频时间长度（5-15分钟范围）
-			double lenOfTime=r.nextDouble()*10+5;
+			double lenOfTime=r.nextDouble();
+			if(lenOfTime<0)lenOfTime=0-lenOfTime;
+			lenOfTime=lenOfTime*10+5;
 			lenOfTime=lenOfTime*60;
 			this.dims.put("Duration", lenOfTime);
 			//随机生成情境，车祸0/正常1,万分之5的概率车祸
@@ -115,6 +117,7 @@ public class Data {
 			//随机生成加油门程度
 			r=new Random((long)SimClock.getTime());
 			double degree=r.nextDouble();
+			if(degree<0) degree=0-degree;
 			this.dims.put("GasPedal", degree);
 			//随机生成数据大小(10-25KB)
 			int sizes=r.nextInt(15)+10;
@@ -131,6 +134,7 @@ public class Data {
 			this.dims.put("LanePosition", (double)position);
 			//随机生成包含图片数据大小
 			double sizes=r.nextDouble();
+			if(sizes<0) sizes=0-sizes;
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;

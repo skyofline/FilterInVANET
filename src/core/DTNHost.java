@@ -92,15 +92,39 @@ public class DTNHost implements Comparable<DTNHost> {
      * 创建原始filter cube,这里暂时使用类别号为1 的类别
      */
     public void createOrginFilterCube(){
-    	Filter orginFilter=new Filter(1
+    	Filter orginFilter1=new Filter(1
     			,this.location,0,0);
-    	orginFilter.addDimension("Weather",0,2);
-    	orginFilter.addDimension("Time",0,4);
-    	orginFilter.addDimension("TrafficCondition",0,2);
-    	orginFilter.addDimension("Size",0.2*1024*1024,2*1024*1024);
+    	orginFilter1.addDimension("Weather",0,2);
+    	orginFilter1.addDimension("Time",0,4);
+    	orginFilter1.addDimension("TrafficCondition",0,2);
+    	orginFilter1.addDimension("Size",0.2*1024*1024,2*1024*1024);
 //    	System.out.println(orginFilter.toString());
-    	this.filterCube.addDimFrameByFilter(orginFilter);
+    	this.filterCube.addDimFrameByFilter(orginFilter1);
     	//对原始filter cube进行切分以完成Filter Cube的建立过程
+    	Filter orginFilter0=new Filter(1
+    			,this.location,0,0);
+    	orginFilter0.addDimension("Duration",300,900);
+    	orginFilter0.addDimension("Situation",0,1);
+    	orginFilter0.addDimension("TrafficCondition",0,2);
+    	orginFilter0.addDimension("Size",51.5*1024*300,51.5*1024*900);
+    	
+    	Filter orginFilter2=new Filter(1
+    			,this.location,0,0);
+    	orginFilter2.addDimension("VehicleStatus",0,1);
+    	orginFilter2.addDimension("VehicleSpeed",0,49);
+    	orginFilter2.addDimension("Size",25*1024,125*1024);
+    	
+    	Filter orginFilter3=new Filter(1
+    			,this.location,0,0);
+    	orginFilter3.addDimension("SteeringWheelAngle",0,180);
+    	orginFilter3.addDimension("GasPedal",0,1);
+    	orginFilter3.addDimension("Size",10*1024,25*1024);
+    	
+    	Filter orginFilter4=new Filter(1
+    			,this.location,0,0);
+    	orginFilter4.addDimension("NumOfVehicles",0,9);
+    	orginFilter4.addDimension("LanePosition",0,2);
+    	orginFilter4.addDimension("Size",0.2*1024*1024,2*1024*1024);
     }
     /*
      * 对filter cube进行切分
