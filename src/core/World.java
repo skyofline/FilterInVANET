@@ -339,7 +339,8 @@ public class World {
 				+",车辆中因为过期而失败的查询数量为："+allFailedMessages
 				+",仍然在车辆中等待数据回复的数量为："+allWaitMessages
 				+",进行filter cube更新所花费的平均时间为："+MessageCenter.filterCubeUpdateTime/MessageCenter.filterCubeUpdates
-				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates;
+				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates
+				+",被切分的filter的个数为："+MessageCenter.splitedFilters;
 
 		res=res+"\n====================="+SimClock.getTime()+"=============================\n";
 		return res;

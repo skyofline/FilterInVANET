@@ -29,8 +29,9 @@ public class MessageCenter {
     public static double cost = 0;//事件传输总消耗
     public static Map<DTNHost,Double> transformTime = new HashMap<>();//事件传输时间，从产生到判定所需时间
     
+   
     /*
-     * 接下来的是性能影响因素metric
+     * 接下来的是性能因素metric
      */
     //消息传送量
     public static double messageTransmission=0;
@@ -41,9 +42,12 @@ public class MessageCenter {
     //成功回复查询的比例
     public static double repliedQueryRate=0;
     //查询数量
-    public static double querys;
+    public static double querys=0;
     //成功查询数量
     public static double repliedQuerys=0;
+    
+    public static double splitedFilters=0;
+    
     //计算成功回复查询比例的函数
     public static void calReplyRate(){
     	if(MessageCenter.querys==0) MessageCenter.repliedQueryRate=0;

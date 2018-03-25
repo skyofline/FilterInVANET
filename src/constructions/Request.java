@@ -139,7 +139,7 @@ public class Request {
 			long seed=System.currentTimeMillis();
 			//根据随机生成的视频时长来生成视频大小
 			//暂时假设1秒钟有51.5KB大小
-			double sizes=51.5*1024*lenOfTime;
+			double sizes=51.5*lenOfTime;
 			this.size=sizes;
 		}else if(type==1){
 			Random r=new Random(System.currentTimeMillis());
@@ -170,7 +170,7 @@ public class Request {
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;
-			this.size=sizes*1024*1024;
+			this.size=sizes*1024;
 		}else if(type==2){
 			Random r=new Random(System.currentTimeMillis());
 			//随机数随机生成车辆状态,良好0/较差1
@@ -196,7 +196,7 @@ public class Request {
 			this.dims.put("GasPedal", degree);
 			//随机生成数据大小(10-25KB)
 			int sizes=r.nextInt(15)+10;
-			this.size=sizes*1024;
+			this.size=sizes;
 		}else if(type==4){
 			Random r=new Random(System.currentTimeMillis());
 			//随机生成汽车拍摄图片中的车辆数(0-9辆)
@@ -210,7 +210,7 @@ public class Request {
 			if(sizes<0.2) sizes=sizes+0.3;
 			else if(sizes<0.5) sizes=sizes;
 			else sizes=sizes*2;
-			this.size=sizes*1024*1024;
+			this.size=sizes*1024;
 		}
 	}
 	public int getIsReplyed() {

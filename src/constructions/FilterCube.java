@@ -27,13 +27,12 @@ public class FilterCube {
 	/*
 	 * 这里存储输入参数
 	 */
-	public double fullSpace=5*1024*1024;
-	private double restSpace=5*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
+	public double fullSpace=0.5*1024*1024;
+	private double restSpace=0.5*1024*1024;//记录filter cube中的剩余可用存储空间，初始默认值为1GB
 	
 	private double updateThreshold1=0.3;
-	private double updateThreshold2=2;
-	//判断存储空间是否更新的阈值
-	private double spaceThreshold=0.05;
+	private double updateThreshold2=1.5;	//判断存储空间是否更新的阈值
+	private double spaceThreshold=0.2;
 	/*
 	 * 这里存储评价体系参数
 	 */
@@ -228,6 +227,7 @@ public class FilterCube {
 				    			adds.putAll(newss);
 				    			//将所有原有的keys添加到delKeys，并最终删除掉
 				    			delKeys.add(nk);
+				    			MessageCenter.splitedFilters=MessageCenter.splitedFilters+1;
 				    		}
 				    	}
 					}
@@ -243,6 +243,7 @@ public class FilterCube {
 		}
 		if(adds.size()>0){
 			this.fc.putAll(adds);
+			System.out.println("切分filter.....");
 		}
 	}
 	
@@ -359,6 +360,7 @@ public class FilterCube {
 			}
 			if(dels.size()>0){
 				datas.removeAll(dels);
+				System.out.println("正在清理数据.....");
 			}
 			this.numOfData=this.numOfData-delNum;
 			this.restSpace=this.restSpace+releaseSpace;
@@ -875,5 +877,11 @@ public class FilterCube {
 	}
 	public double getRestSpace(){
 		return this.restSpace;
+	}
+	public double getSpaceThreshold(){
+		return this.spaceThreshold;
+	}
+	public void setSpaceThreshold(double t){
+		this.spaceThreshold=t;
 	}
 }

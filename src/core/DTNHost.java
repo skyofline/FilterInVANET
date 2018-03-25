@@ -349,8 +349,8 @@ public class DTNHost implements Comparable<DTNHost> {
 		for(Integer types:this.filterCubes.keySet()){
     		this.filterCubes.get(types).showFilterCubeStruct();
     		if(types==2||types==3){
-    			this.filterCubes.get(types).setFullSpace(1*1024*1024);
-    			this.filterCubes.get(types).setRestSpace(1*1024*1024);
+    			this.filterCubes.get(types).setFullSpace(0.05*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(0.051024*1024);
     		}
     	}
 		//生成dtnHost时添加轨迹数据
@@ -413,8 +413,8 @@ public class DTNHost implements Comparable<DTNHost> {
 		for(Integer types:this.filterCubes.keySet()){
     		this.filterCubes.get(types).showFilterCubeStruct();
     		if(types==2||types==3){
-    			this.filterCubes.get(types).setFullSpace(1*1024*1024);
-    			this.filterCubes.get(types).setRestSpace(1*1024*1024);
+    			this.filterCubes.get(types).setFullSpace(0.05*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(0.05*1024*1024);
     		}
     	}
 		//生成dtnHost时添加轨迹数据
@@ -685,7 +685,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.router.update();		
 		//如果是车辆节点，则采集数据，按照一定时间
-		if(this.time%90==1){
+		if(this.time%120==1){
 			if(this.type==0) {
 				this.collectData();
 				
@@ -700,7 +700,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		 
 		for(Integer types:this.filterCubes.keySet()){
 			//判断filter cube中的数据量是否过多，若是，则进行修改删除
-			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<0.1){
+			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<this.filterCubes.get(types).getSpaceThreshold()){
 				this.filterCubes.get(types).updateDatas();
 			}
 			
@@ -1432,30 +1432,8 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.filters.addAll(newFilters);
 	}
-//	//根据filter向车辆请求数据
-//	public void addTraffData(){
-//			List<DTNHost> destin=MessageCenter.selectNodeForRSU(this);
-//			 for(DTNHost d:destin){
-//				 Message ret=new Message(this, d, "RSUQuery"+System.currentTimeMillis(), 1024,Message.Query_Type);
-//				Request q=this.createNewRequest();
-//				ret.addProperty("query", q);
-//				System.out.println("正在请求数据。。。。。。");
-//				this.createNewMessage(ret);
-//			 }
-//	}
-	
-	//车辆节点更新存储数据
-	public void updateDataForCar(){
-		List<Data> del=new ArrayList<>();
-		for(Data d:this.datas.keySet()){
-			if(SimClock.getTime()-d.getTime()>60*60*50){
-				del.add(d);
-			}
-		}
-		for(Data nd:del){
-			this.datas.remove(nd);
-		}
-	}
+
+
 	//创建Request,(随机生成数据地点，利用云端的edge节点)
 	public Request createNewRequest(){
 		Random r=new Random(System.currentTimeMillis());

@@ -53,8 +53,8 @@ public class Cloud {
   //存储filter cube中更新filter各个维度的最新一次时间
     private double oldUpdateTime=0;
     
-    private double space=10*1024*1024;//用来表示节点的存储空间大小
-    private double restSpace=10*1024*1024;//用来表示节点的剩余存小
+    private double space=2*1024*1024;//用来表示节点的存储空间大小
+    private double restSpace=2*1024*1024;//用来表示节点的剩余存小
     /*
      * 计算dimensional split factor的balanced factor,暂时假定为0.5
      */
@@ -73,10 +73,10 @@ public class Cloud {
     		this.filterCubes.get(types).setFullSpace(this.space);
     		this.filterCubes.get(types).setRestSpace(this.restSpace);
     		if(types==2||types==3){
-    			this.filterCubes.get(types).setFullSpace(2*1024*1024);
-    			this.filterCubes.get(types).setRestSpace(2*1024*1024);
+    			this.filterCubes.get(types).setFullSpace(0.2*1024*1024);
+    			this.filterCubes.get(types).setRestSpace(0.2*1024*1024);
     		}
-//    		this.filterCubes.get(types).showFilterCubeStruct();
+    		this.filterCubes.get(types).showFilterCubeStruct();
     	}    	
     }
     /*
@@ -309,13 +309,12 @@ public class Cloud {
 	 * @param simulateConnections Should network layer be updated too
 	 */
 	public void update() {
-		for(Integer types:this.filterCubes.keySet()){
-			//判断filter cube中的数据量是否过多，若是，则进行修改删除
-			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<0.1){
-				this.filterCubes.get(types).updateDatas();
-			}
-			
-    	}
+//		for(Integer types:this.filterCubes.keySet()){
+//			//判断filter cube中的数据量是否过多，若是，则进行修改删除
+//			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<0.1){
+//				this.filterCubes.get(types).updateDatas();
+//			}	
+//    	}
 		if(SimClock.getTime()-this.oldUpdateTime>3600){
 				this.oldUpdateTime=SimClock.getTime();
 				double beginTime=SimClock.getTime();

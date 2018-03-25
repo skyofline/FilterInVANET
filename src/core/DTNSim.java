@@ -90,7 +90,7 @@ public class DTNSim {
 	 * @param args Command line arguments
 	 */
 	public static void main(String[] args) {
-		boolean batchMode = true;
+		boolean batchMode = false;
 		int nrofRuns[] = {0,1};
 		String confFiles[];
 		int firstConfIndex = 0;
