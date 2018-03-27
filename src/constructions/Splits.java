@@ -2,7 +2,7 @@ package constructions;
 
 public class Splits{
 	private String dimension;
-	private int splits;
+	private int splits=1;
 	private double minBord;
 	private double maxBord;
 	public Splits(String str,int split,double min,double max){
@@ -11,8 +11,18 @@ public class Splits{
 		this.setMinBord(min);
 		this.setMaxBord(max);
 	}
-	public void doSplit(){
-		
+//	public void doSplit(){
+//		
+//	}
+	/*
+	 * 判断一个splits是否与另一个splits相同
+	 */
+	public boolean isEqual(Splits s){
+		if(this.getDimension().equals(s.getDimension())
+				&&this.getMinBord()==s.getMinBord()
+				&&this.getMaxBord()==s.getMaxBord())
+			return true;
+		else return false;
 	}
 	//判断一个值是不是从属于该splits的范围
 	public boolean inRange(double s){

@@ -104,7 +104,14 @@ public class Request {
 		this.level=level;
 	}
 	public String toString(){
-		return new Time(time).toString()+"精度级别"+level+"查询类型"+type;
+		String res="";
+		res=res+new Time(time).toString()+"精度级别"+level+"查询类型"+type;
+		res=res+"\n";
+		for(String s:this.dims.keySet()){
+			res=res+s+":"+this.dims.get(s)+",";
+		}
+				
+		return res;
 	}
 
 	public Map<String,Double> getDims() {
@@ -121,8 +128,10 @@ public class Request {
 	public void addDimensions(){
 		if(type==0){
 			Random r=new Random(System.currentTimeMillis());
-			//随机生成视频时间长度（5-35分钟范围）
-			double lenOfTime=r.nextDouble()*30+5;
+			//随机生成视频时间长度（5-15分钟范围）
+			double lenOfTime=r.nextDouble();
+			if(lenOfTime<0)lenOfTime=0-lenOfTime;
+			lenOfTime=lenOfTime*10+5;
 			lenOfTime=lenOfTime*60;
 			this.dims.put("Duration", lenOfTime);
 			//随机生成情境，车祸0/正常1,万分之5的概率车祸

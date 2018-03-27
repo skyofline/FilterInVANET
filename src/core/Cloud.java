@@ -67,7 +67,14 @@ public class Cloud {
      * Cloud 端初始化函数
      */
     public Cloud(){
+    	this.initOriginFilterCube();    	
+    }
+    public void initOriginFilterCube(){
+    	//初始化创建filtercube
     	this.createOrginFilterCube();
+    	for(FilterCube f:this.filterCubes.values()){
+    		f.initFilterCube();
+    	}
     	this.splitFilterCubeFirst();
     	for(Integer types:this.filterCubes.keySet()){
     		this.filterCubes.get(types).setFullSpace(this.space);
@@ -76,8 +83,9 @@ public class Cloud {
     			this.filterCubes.get(types).setFullSpace(0.2*1024*1024);
     			this.filterCubes.get(types).setRestSpace(0.2*1024*1024);
     		}
-    		this.filterCubes.get(types).showFilterCubeStruct();
-    	}    	
+//    		this.filterCubes.get(types).showFilterCubeStruct();
+    	}
+    	
     }
     /*
      * 下传数据到edge端

@@ -8,9 +8,16 @@ import java.util.Set;
 
 
 public class Keys{
+	public Keys next=null;
 	private Map<String,Splits> key=new LinkedHashMap<String,Splits>();
 	public Keys(Map<String,Splits> m){
 		this.key.putAll(m);
+	}
+	public boolean isEqual(Keys ky){
+		for(String s:ky.getKey().keySet()){
+			if(!this.key.containsKey(s)||!this.key.get(s).isEqual(ky.getKey().get(s))) return false;
+		}
+		return true;
 	}
 	/*
 	 * 根据filter填充维度
@@ -53,6 +60,7 @@ public class Keys{
 	//判断一个filter是否在key的范围之内
 	public boolean inRange(Filter f){
 		int i=0;
+		if(this.key.size()<1) return false;
 		for(String s:this.key.keySet()){
 			if(f.getDims().keySet().contains(s)
 					&&this.key.get(s).inRange(f.getDims().get(s)))
@@ -64,6 +72,7 @@ public class Keys{
 	//判断一个data是否在key的范围之内
 	public boolean inRange(Data d){
 		int i=0;
+		if(this.key.size()<1) return false;
 		for(String s:this.key.keySet()){
 			if(d.getDimensions().keySet().contains(s)
 					&&this.key.get(s).inRange(d.getDimensions().get(s)))
@@ -75,16 +84,13 @@ public class Keys{
 	//判断一个requst是否在key的范围之内
 	public boolean inRange(Request r){
 		int i=0;
-		for(String s:this.key.keySet()){
-			if(s.equals("Size")){
-				i++;
-				continue;
-			}
-			if(r.getDims().keySet().contains(s)
+		if(this.key.size()<1) return false;
+		for(String s:r.getDims().keySet()){
+			if(this.getKey().keySet().contains(s)
 					&&this.key.get(s).inRange(r.getDims().get(s)))
 				i++;
 		}
-		if(i==this.key.keySet().size()) return true;
+		if(i==r.getDims().keySet().size()) return true;
 		else return false;
 	}
 	public String toString(){
@@ -101,4 +107,15 @@ public class Keys{
 		}
 		return res;
 	}
+	public Keys(){
+		
+	}
+	/*
+	 * 创建一个作为头指针的key
+	 */
+	public static Keys creatHeadKey(){
+		Keys k=new Keys();
+		return k;
+	}
+	
 }

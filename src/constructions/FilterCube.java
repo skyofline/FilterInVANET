@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
+
 import core.Cloud;
 import core.DTNHost;
 import core.MessageCenter;
@@ -14,6 +16,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 public class FilterCube {
+	public Map<String,Map<Integer,Splits>> dimNum=new LinkedHashMap<String,Map<Integer,Splits>>();
+	public Map<Integer,Keys> keysNum=new LinkedHashMap<Integer,Keys>();
 	/*
 	 * 首先定义filter cube中的key类、value类和split类
 	 */
@@ -22,6 +26,29 @@ public class FilterCube {
 	private Map<Keys,Values> fc=new LinkedHashMap<Keys,Values>();
 
 	public FilterCube(){
+		
+	}
+	/*
+	 * 初始化filtercube中的dimNum和keyNum，
+	 */
+	public void initFilterCube(){
+		List<String> dims=this.getDimensions();
+		for(String s:dims){
+			Map<Integer,Splits> is=new LinkedHashMap<Integer,Splits>();
+			dimNum.put(s, is);
+		}
+		for(Keys k:this.fc.keySet()){
+			int kPlace=1;
+			for(String s:k.getDimensions()){
+				int n=this.putSplits(k.getKey().get(s));
+				kPlace=kPlace*n;
+			}
+			if(!this.keysNum.containsKey(kPlace)){
+				Keys head=Keys.creatHeadKey();
+				this.putKeyInKeyNum(kPlace, head);
+			}
+			this.putKeyInKeyNum(kPlace, k);
+		}
 		
 	}
 	/*
@@ -48,52 +75,49 @@ public class FilterCube {
 	 *将一条数据添加到filter cube中,同时判断是否传播
 	 */
     public void putData(Data d,DTNHost dtn){
-  		Set<Keys> ks=this.fc.keySet();
-  		if(ks.size()==0) System.out.println(dtn.getName()+"Filter cube 未建立，需要重启或修正bug");
+  		if(this.fc.keySet().size()==0) System.out.println(dtn.getName()+"Filter cube 未建立，需要重启或修正bug");
 //    	System.out.println(dtn.getName()+"中的filter cube的层级数："+ks.size());
 //  		System.out.println(d.toString());
-    	int i=0;
-  		for(Keys k:ks){
-    		if(k.inRange(d)){
-    			//添加数据前根据filter 判断重设数据是否上传状态
-    			for(Filter f:this.fc.get(k).getFilters()){
-    				if(f.judgeData(d)) f.resetDataStatus(d);
-    			}
-    			if(this.getRestSpaceRate()<this.spaceThreshold){
-    				this.updateDatas();
-    			}
-    			if(this.getRestSpaceRate()<this.spaceThreshold){
-    				this.clearDatas();
-    			}
-    			this.fc.get(k).addData(d);
-    			//添加数据时更新filter cube的剩余空间
-    			this.restSpace=this.restSpace-d.getSize();
-    			//添加数据后，判断尝试将数据上传
-    			if(dtn.getType()==0){
-    				this.numOfExpandDatas++;
-    				if(d.getExpandState()==0) dtn.uploadDataToEdge(d);
-    				 
-    			}
-    			else if(dtn.getType()==1) {
-    				this.numOfExpandDatas++;
-    				if(d.getExpandState()==0) dtn.uploadDataToCloud(d);
-    			}
+  		Keys k=this.getKeysByData(d);
+  		if(k==null) System.err.println("filter cube放入数据到DTNHost出错，未找到相应key");
+    	if(k.inRange(d)){
+    		if(!this.fc.containsKey(k)){
+    			System.err.println("wrong in there,putData function");
     			
-    			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
-    			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
-    			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
-//    			this.updateFilter(k, this.fc.get(k));
-    			break;
-    		}else{
-    			i++;
     		}
-    	}
-  		if(i==ks.size()){
-  			System.out.println(dtn.getName()+"向filter cube中插入数据失败！！！");
-//  			System.out.println("失败数据："+d.toString());
-  		}
-  		else
-  			this.numOfData=this.numOfData+1;
+    		//添加数据前根据filter 判断重设数据是否上传状态
+    		for(Filter f:this.fc.get(k).getFilters()){
+    			if(f.judgeData(d)) f.resetDataStatus(d);
+    		}
+    		if(this.getRestSpaceRate()<this.spaceThreshold){
+    			this.updateDatas();
+    		}
+    		if(this.getRestSpaceRate()<this.spaceThreshold){
+    			this.clearDatas();
+    		}
+    		this.fc.get(k).addData(d);
+    		//添加数据时更新filter cube的剩余空间
+    		this.restSpace=this.restSpace-d.getSize();
+    		//添加数据后，判断尝试将数据上传
+    		if(dtn.getType()==0){
+    			this.numOfExpandDatas++;
+    			if(d.getExpandState()==0) dtn.uploadDataToEdge(d);
+    			 
+    		}
+    		else if(dtn.getType()==1) {
+    			this.numOfExpandDatas++;
+    			if(d.getExpandState()==0) dtn.uploadDataToCloud(d);
+    		}
+    		
+    		if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
+    		if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
+    		if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
+//    			this.updateFilter(k, this.fc.get(k));
+   			this.numOfData=this.numOfData+1;  
+   		}else{
+   			System.err.println("插入数据失败");
+   		}
+  			
 //    	System.out.println("数据大小为："+d.getSize()
 //    		+"，"+dtn.getName()+"添加前剩余大小为："+this.getRestSpace()
 //    		+"，添加后的剩余大小为："+this.getRestSpace());
@@ -102,11 +126,9 @@ public class FilterCube {
 	 *将一条数据添加到filter cube中,不判断是否传播
 	 */
     public void putDataForCloud(Data d){
-  		Set<Keys> ks=this.fc.keySet();
-  		if(ks.size()==0) System.out.println("Cloud Filter cube 未建立，需要重启或修正bug");
-    	int i=0;
-  		for(Keys k:ks){
-    		
+  		if(this.fc.keySet().size()==0) System.err.println("Cloud Filter cube 未建立，需要重启或修正bug");
+  		Keys k=this.getKeysByData(d);
+  		if(k==null) System.err.println("放入数据到cloud中，filter cube放入数据出错,未找到相应key");
     		if(k.inRange(d)){
     			//添加数据前根据filter 判断重设数据是否上传状态
     			for(Filter f:this.fc.get(k).getFilters()){
@@ -125,38 +147,38 @@ public class FilterCube {
     			if(d.getExpandState()==1&&d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedBlockDatas(1);
     			if(d.getUsageCount()>0) this.fc.get(k).getFilters().get(0).addUsedDatas(1);
 //    			this.updateFilter(k, this.fc.get(k));
-    			break;
-    		}else{
-    			i++;
+    			this.numOfData=this.numOfData+1;    
     		}
-    	}
-  		if(ks.size()==i){
-  			System.out.println("Cloud向filter cube中插入数据失败");
-  			System.out.println("数据结构："+d.toString());
-  			System.out.println("keyset结构："+ks.size());
-  			for(Keys k:ks){
-  				if(k.inRange(d)) System.out.println(k.toString()+"inRandge");
-  				else System.out.println(k.toString()+"not in range");
-  			}
-  		}
-  		else {
-  			this.numOfData=this.numOfData+1;
-  		}
-    	
     }
     /*
 	 * 向filter cube中添加request
 	 */
 	public void putRequest(Request r){
-		Set<Keys> ks=this.fc.keySet();
-    	for(Keys k:ks){
-    		
+		if(this.fc.keySet().size()==0) System.err.println("Cloud Filter cube 未建立，需要重启或修正bug");
+  		List<Keys> ks=this.getKeysByRequest(r);
+  		if(ks.size()==0){
+  			System.err.println("filter cube放入request出错,未找到相应key"+r.toString()+"request类型"+r.getType()+"\n");
+  			System.err.println(this.dimNumString());
+  			for(Keys k:this.keysNum.values()){
+  				while(k!=null){
+  					System.err.println(k.toString());
+  					k=k.next;
+  				}
+  			}
+  			
+//  			for(Keys k:this.keysNum.values()){
+//  				while(k!=null){
+//  					System.err.println(k.toString());
+//  					k=k.next;
+//  				}
+//  			}
+  		}
+    	for(Keys k:ks)
     		if(k.inRange(r)){
-    			this.fc.get(k).addRequest(r);
-    			break;
+    			this.fc.get(k).addRequest(r);			
     		}
-    	}
     	this.numOfRequest=this.numOfRequest+1;
+    	
 	}
     //更新filter cube中每一行的filter
 	public void update(){
@@ -467,8 +489,11 @@ public class FilterCube {
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
 		List<Data> res=new ArrayList<Data>();
-		Set<Keys> ks=this.fc.keySet();
-    	for(Keys k:ks){
+		if(this.fc.keySet().size()==0) System.err.println("Cloud Filter cube 未建立，需要重启或修正bug");
+  		List<Keys> keyss=this.getKeysByRequest(r);
+  		if(keyss.size()==0) System.err.println("未找到相应request的key"+r.toString());
+  		for(Keys k:keyss){
+  			Set<Keys> ks=this.fc.keySet();
     		Values v=this.fc.get(k);
     		Filter f=this.fc.get(k).getFilters().get(0);
     		if(f.judgeRequest(r)){
@@ -549,9 +574,9 @@ public class FilterCube {
     					}
     				}
     			}
-    			if(res.size()>0) break;
     		}
-    	}
+  		}
+		
     	//删除被切分的分片和添加分出的分片
     	if(delKeys.size()>0){
     		for(Keys kk:delKeys){
@@ -573,8 +598,10 @@ public class FilterCube {
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
 		List<Data> res=new ArrayList<Data>();
-		Set<Keys> ks=this.fc.keySet();
-    	for(Keys k:ks){
+		if(this.fc.keySet().size()==0) System.err.println("Cloud Filter cube 未建立，需要重启或修正bug");
+		List<Keys> keyss=this.getKeysByRequest(r);
+  		if(keyss.size()==0) System.err.println("未找到相应request的key"+r.toString());
+  		for(Keys k:keyss){
     		Values v=this.fc.get(k);
     		Filter f=this.fc.get(k).getFilters().get(0);
     		if(f.judgeRequest(r)){
@@ -648,9 +675,9 @@ public class FilterCube {
     					}
     				}
     			}
-    			if(res.size()>0) break;
+    		
     		}
-    	}
+  		}
     	//删除被切分的分片和添加分出的分片
     	if(delKeys.size()>0){
     		for(Keys kk:delKeys){
@@ -665,8 +692,24 @@ public class FilterCube {
 	
 	//dimension split
 	public Map<Keys, Values> splitDimension(Keys k,String dimension,int num){
+		/*
+		 * 维度切分，首先要将旧的维度对应删除，再将新的维度分片添加进去
+		 */
+		
 		Map<Keys,Values> addKV=new LinkedHashMap<>();
+		
 		if(num>1){
+			List<Splits> addSp=new ArrayList<Splits>();
+//			List<Splits> delSp=new ArrayList<Splits>();
+//			delSp.add(k.getKey().get(dimension));
+			int beNumKey=1;
+			for(String di:k.getKey().keySet()){
+				if(!di.equals(dimension)){
+					int temp=this.getDimNum(di,k.getKey().get(di));
+					beNumKey=beNumKey*temp;
+				}
+			}
+			
 //			List<Keys> del=new ArrayList<>();
 			if(k.getKey().containsKey(dimension)){
 				
@@ -677,6 +720,7 @@ public class FilterCube {
 				for(int i=0;i<num;i++){
 					Keys nKey=new Keys(k);
 					nKey.changeDimensionValue(dimension, k.getKey().get(dimension).getMinBord()+i*aver,k.getKey().get(dimension).getMinBord()+(i+1)*aver);
+					addSp.add(nKey.getKey().get(dimension));
 					Values newValues=new Values(this.fc.get(k));
 					//先清空newValues中的数据，然后从原来数据中挑选符合的放入newValues中
 					newValues.clearAllDatas();
@@ -701,6 +745,19 @@ public class FilterCube {
 					addKV.put(nKey, newValues);
 				}
 			}
+//			for(Splits s:delSp){
+//				this.delSplits(s);
+//			}
+			for(Splits s:addSp){
+				int pl=this.putSplits(s);
+				if(pl<=0) System.err.println("添加出错");
+			}
+			for(Keys nk:addKV.keySet()){
+				int nums=this.getPosByKey(nk);
+				this.putKeyInKeyNum(nums, nk);
+				
+			}
+			this.delKeyInKeyNum(this.getPosByKey(k), k);
 			return addKV;
 		}else{
 			addKV.put(k, this.fc.get(k));
@@ -711,10 +768,13 @@ public class FilterCube {
 	 * 向filter cube中添加一个filter
 	 */
 	public void addFilter(Filter f){
-		for(Keys k:this.fc.keySet()){
-			if(k.inRange(f)) this.fc.get(k).addFilter(f);
-			this.numOfFilter=this.numOfFilter+1;
-		}
+		Keys k=this.getKeysByFIlter(f);
+  		if(k==null) System.err.println("filter cube添加出错，未找到相应key");
+			if(k.inRange(f)){
+				this.fc.get(k).addFilter(f);
+				this.numOfFilter=this.numOfFilter+1;
+			}
+			
 	}
 	/*
 	 * 计算获取一个维度的最大分片数量
@@ -771,12 +831,252 @@ public class FilterCube {
 		if(l.size()==0) System.err.println("filter cube获取维度错误");
 		return l;
 	}
+//	/*
+//	 * 制造该filter cube的某一行的副本
+//	 * 
+//	 */
+//	public void copyFromKeyValue(Keys k,Values v){
+//		
+//	}
 	/*
-	 * 制造该filter cube的某一行的副本
-	 * 
+	 * 在dimNum中删除原有splits,
+	 *  public int delSplits(Splits olds){
+		int delNum=-1;
+		for(Integer i:this.dimNum.get(olds.getDimension()).keySet()){
+			if(this.dimNum.get(olds.getDimension()).get(i).isEqual(olds)){
+				delNum=i;
+				break;
+			}
+		}
+		if(delNum==-1){
+			System.err.println("wrong in deleting splits");
+			return -1;
+		}
+		else {
+			this.dimNum.get(olds.getDimension()).remove(delNum);
+			return delNum;
+		}
+			
+	}
+
 	 */
-	public void copyFromKeyValue(Keys k,Values v){
+	
+	/*
+	 * 在dimNum中添加新的splits
+	 */
+	public int  putSplits(Splits news){
+		for(Integer i:this.dimNum.get(news.getDimension()).keySet()){
+			if(this.dimNum.get(news.getDimension()).get(i).isEqual(news)) return i;
+		}
+		int len=this.dimNum.get(news.getDimension()).size()+1;
+		while(this.dimNum.get(news.getDimension()).containsKey(len)) len++;
+		this.dimNum.get(news.getDimension()).put(len, news);		
+		return len;
+	}
+
+	/*
+	 * 在keyNum中添加新的key
+	 */
+	public void putKeyInKeyNum(int pos,Keys k){
+		if(this.keysNum.containsKey(pos)){
+			Keys tk=this.keysNum.get(pos);
+			while(tk.next!=null) tk=tk.next;
+			tk.next=k;
+		}else{
+			Keys heads=Keys.creatHeadKey();
+			this.keysNum.put(pos, heads);
+			this.keysNum.get(pos).next=k;
+		}
+	}
+	
+	/*
+	 * 在keyNum中删除原有的key
+	 */
+	public void delKeyInKeyNum(int pos, Keys k){
+		if(this.keysNum.containsKey(pos)){
+			Keys hkey=this.keysNum.get(pos);
+			while(hkey.next!=null){
+				if(hkey.next.isEqual(k)){
+					hkey.next=hkey.next.next;
+				}else{
+					hkey=hkey.next;
+				}
+			}
+		}
+	}
+	
+	/*
+	 * 根据dimension和值获取相应的dimNum
+	 */
+	public List<Integer> getDimNum(String dimension,double value){
+		List<Integer> reslist=new ArrayList<Integer>();
+		if(this.dimNum.keySet().contains(dimension)){
+			for(Integer i:this.dimNum.get(dimension).keySet()){
+				if(this.dimNum.get(dimension).get(i).inRange(value)){
+					reslist.add(i);
+					
+				}
+			}
+		}
+		return reslist;
+	}
+	/*
+	 * 根据dimension和分片获取相应的dimNum
+	 */
+	public int getDimNum(String dimension,Splits s){
+		int res=-1;
+		if(this.dimNum.keySet().contains(dimension)){
+			for(Integer i:this.dimNum.get(dimension).keySet()){
+				if(this.dimNum.get(dimension).get(i).isEqual(s)){
+					res=i;
+					break;
+				}
+					
+			}
+		}
+		return res;
+	}
+	/*
+	 * 根据request获取key
+	 */
+	public List<Keys> getKeysByRequest(Request r){
+		Keys k=null;
+		List<Integer> keyNumList = new ArrayList<Integer>();
+		for(String s:r.getDims().keySet()){
+			List<Integer> num=this.getDimNum(s, r.getDims().get(s));
+			if(keyNumList.size()==0){
+				keyNumList=num;
+			}else{
+				List<Integer> temp=new ArrayList<Integer>();
+				for(int i:keyNumList){
+					for(int j:num){
+						int t=i*j;
+						if(!temp.contains(t)){
+							temp.add(t);
+						}
+					}
+				}
+				keyNumList=temp;
+			}
+		}
+		String anoDim="Size";
+		if(this.dimNum.containsKey(anoDim)){
+			List<Integer> num=new ArrayList<Integer>();
+			for(int i:this.dimNum.get(anoDim).keySet()) num.add(i);
+			if(keyNumList.size()==0){
+				keyNumList=num;
+			}else{
+				List<Integer> temp=new ArrayList<Integer>();
+				for(int i:keyNumList){
+					for(int j:num){
+						int t=i*j;
+						if(!temp.contains(t)){
+							temp.add(t);
+						}
+					}
+				}
+				keyNumList=temp;
+			}
+		}
+		List<Keys> resK=new ArrayList<Keys>();
+		for(int keynum:keyNumList){
+			k=this.keysNum.get(keynum);
+			if(!this.keysNum.containsKey(keynum)){
+				continue;
+			}
+			while(!k.inRange(r)){
+				k=k.next;
+				if(k==null) break;
+			}
+			if(k==null) continue;
+			else{
+				resK.add(k);
+				continue;
+			}
+		}
+		return resK;
+	}
+	
+	/*
+	 * 根据data获取key
+	 */
+	public Keys getKeysByData(Data d){
+		Keys k=null;
+		List<Integer> keyNumList = new ArrayList<Integer>();
+		for(String s:d.getDimensions().keySet()){
+			List<Integer> num=this.getDimNum(s, d.getDimensions().get(s));
+			if(keyNumList.size()==0){
+				keyNumList=num;
+			}else{
+				List<Integer> temp=new ArrayList<Integer>();
+				for(int i:keyNumList){
+					for(int j:num){
+						int t=i*j;
+						if(!temp.contains(t)){
+							temp.add(t);
+						}
+					}
+				}
+				keyNumList=temp;
+			}
+		}
+		Keys resK=null;
+		for(int keynum:keyNumList){
+			k=this.keysNum.get(keynum);
+			resK=k;
+			while(!resK.inRange(d)){
+				resK=resK.next;
+				if(resK==null) break;
+			}
+			if(resK==null) continue;
+			else{
+				break;
+			}
+		}
+		return resK;
+	}
+	/*
+	 * 根据filter获取key
+	 */
+	public Keys getKeysByFIlter(Filter f){
+		Keys k=null;
+		int keynum=1;
+		for(String s:f.getDims().keySet()){
+			int num=this.getDimNum(s,f.getDims().get(s));
+			if(num==-1) System.err.println("出错，未能获取dimension的位置值");
+			else keynum=keynum*num;
+		}
+		k=this.keysNum.get(keynum);
+		Keys resK=k;
+		while(!this.fc.containsKey(resK)||!resK.inRange(f)) resK=resK.next;
+		return resK;
+	}
+	/*
+	 * 获取keys应该所在的位置
+	 */
+	public int getPosByKey(Keys k){
+		int res=1;
+		for(String s:k.getDimensions()){
+			int ns=this.getDimNum(s,k.getKey().get(s));
+			if(ns<0){
+				System.err.println("获取key所在的位置出错");
+				System.exit(-1);
+			}
+			res=res*ns;
+		}
 		
+		return res;
+	}
+	public String dimNumString(){
+		String res="";
+		for(String s:this.dimNum.keySet()){
+			res=res+s+"\n";
+			for(int i:this.dimNum.get(s).keySet()){
+				res=res+i+":"+this.dimNum.get(s).get(i).toString()+",";
+			}
+			res=res+"\n";
+		}
+		return res;
 	}
 	public Map<Keys,Values> getFc() {
 		return fc;
@@ -837,6 +1137,7 @@ public class FilterCube {
 	 */
 	public void addDimFrameByFilter(Filter f){
 		Keys k=new Keys(f);
+		
 		Values v=new Values(f);
 		this.fc.put(k, v);
 	}
