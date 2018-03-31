@@ -199,7 +199,7 @@ public class Cloud {
     			int befores=addKV.size();
     			for(int i=0;i<len;i++){
     				String dim=this.filterCubes.get(types).getDimensions().get(i);
-    				for(int j=1;j<=this.filterCubes.get(types).getMaxSplits(dim);j++){
+    				for(int j=1,maxSplits=this.filterCubes.get(types).getMaxSplits(dim);j<=maxSplits;j++){
     					double dimSplitFac=this.getDimSplitFactor(this.filterCubes.get(types), dim, j);
     					if(dimSplitFac<min[i]){
     						min[i]=dimSplitFac;

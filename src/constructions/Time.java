@@ -58,8 +58,11 @@ public class Time {
 		return res;
 	}
 	public String toString(){
-		return this.year+"."+this.month+"."+this.date+":"
-				+this.hour+":"+this.minute+":"+this.second;
+		StringBuilder s=new StringBuilder(this.year);
+		s.append("-").append(this.month).append("-").append(this.date).append(" ")
+			.append(this.hour).append(":").append(this.minute).append(":").append(this.second);
+		
+		return s.toString();
 	}
 	//获得相对应于仿真器中的时间，这里建设仿真器模拟的是1天的情况，从0时0分0秒开始
 	public double getSimTime(){

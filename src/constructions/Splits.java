@@ -38,7 +38,7 @@ public class Splits{
 		}
 		return false;
 	}
-	public String toString(){
+	public String toStrig(){
 		return this.getDimension()+"分片数为："+this.getSplits()+"，最大值为："
 				+this.getMaxBord()+"，最小值为："+this.getMinBord();
 	}

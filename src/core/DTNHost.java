@@ -60,9 +60,9 @@ public class DTNHost implements Comparable<DTNHost> {
 	private List<TrackInfo> moveTracks=new ArrayList<>();
 	//存储车辆走到本地存储的track中的第几步，起始值为0
 	private int stepOfTrack=0;
-	private Map<Data,Integer> datas=new LinkedHashMap<Data,Integer>();
-    private List<Filter> filters=new ArrayList<>();
-    private Map<Request,Integer> requests=new LinkedHashMap<Request, Integer>();
+//	private Map<Data,Integer> datas=new LinkedHashMap<Data,Integer>();
+//    private List<Filter> filters=new ArrayList<>();
+//    private Map<Request,Integer> requests=new LinkedHashMap<Request, Integer>();
     //waitMessage存储发送过来的查询消息
     private List<Message> waitMessages=new ArrayList<Message>();
     //存储等待数据的查询消息
@@ -186,7 +186,7 @@ public class DTNHost implements Comparable<DTNHost> {
     			int befores=addKV.size();
     			for(int i=0;i<len;i++){
     				String dim=filtercube.getDimensions().get(i);
-    				for(int j=1;j<=filtercube.getMaxSplits(dim);j++){
+    				for(int j=1,maxSplits=filtercube.getMaxSplits(dim);j<=maxSplits;j++){
     					double dimSplitFac=this.getDimSplitFactor(filtercube, dim, j);
     					if(dimSplitFac<min[i]){
     						min[i]=dimSplitFac;
@@ -428,8 +428,6 @@ public class DTNHost implements Comparable<DTNHost> {
 				}
 			}
 		}
-		
-		
 		System.out.println(this.getName()+"已经完全建立");
 	}
 
@@ -687,7 +685,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.router.update();		
 		//如果是车辆节点，则采集数据，按照一定时间
-		if(this.time%120==1){
+		if(this.time%180==1){
 			if(this.type==0) {
 				this.collectData();
 				
@@ -1267,7 +1265,6 @@ public class DTNHost implements Comparable<DTNHost> {
     							MessageCenter.repliedQuerys=MessageCenter.repliedQuerys+1;
     					}
     				}
-    				
     			}
     			this.waitMessages.removeAll(delMessage);
     			  				
@@ -1301,7 +1298,7 @@ public class DTNHost implements Comparable<DTNHost> {
 						Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
 						ret.addProperty("Data"+0+System.currentTimeMillis(), d);
 						ret.setSize((int)d.getSize());	
-						this.createNewMessage(ret);
+						this.createNewMessage(ret); 
 						this.numOfRepliedQuery++;			
 						logger.info(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
 						dels.add(mt);
@@ -1316,10 +1313,10 @@ public class DTNHost implements Comparable<DTNHost> {
     	}
     }
   
-	@SuppressWarnings("unchecked")
-	public List<Request> getQuery() {
-		return (List<Request>) requests.keySet();
-	}
+//	@SuppressWarnings("unchecked")
+//	public List<Request> getQuery() {
+//		return (List<Request>) requests.keySet();
+//	}
 
 	
 	public int getType() {
@@ -1332,30 +1329,30 @@ public class DTNHost implements Comparable<DTNHost> {
 		return name;
 	}
 	//定时根据时间和查询次数修改数据的阈值
-	public void updateDataThresh(int type,Data d,double num){
-//		if(type==0) d.setThreshold(d.getThreshold()+num);//设定type为0时代表根据时间修改数据阈值
-//		else if(type==1) d.setThreshold(d.getThreshold()+num);//设定type为1时代表根据查询次数修改数据阈值
-		double time=(SimClock.getTime()-d.getTime())/60;//时间以分钟为单位，是从数据创建时间到当前时间的差
-		int times=this.datas.get(d);
-		num=times/time;
-		d.setThreshold(d.getThreshold()+num);
-	}
-	//周期性的更新filter的阈值
-	public void updataFilterThresh(){
-		List<Filter> delf=new ArrayList<Filter>();
-		List<Filter> addf=new ArrayList<Filter>();
-		for(Filter f:this.filters){
-			delf.add(f);
-			//根据一段时间内的查询次数修改filter阈值，
-			if(f.getNewTimes()-f.getOldTimes()<5) f.setThreshold(f.getThreshold()+0.2);
-			else if(f.getNewTimes()-f.getOldTimes()>40) f.setThreshold(f.getThreshold()-0.2);
-			f.setOldTimes(f.getNewTimes());
-			if(f.getThreshold()<9 && f.getThreshold()>1) addf.add(f);
-				
-		}
-		this.filters.removeAll(delf);
-		this.filters.addAll(addf);
-	}
+//	public void updateDataThresh(int type,Data d,double num){
+////		if(type==0) d.setThreshold(d.getThreshold()+num);//设定type为0时代表根据时间修改数据阈值
+////		else if(type==1) d.setThreshold(d.getThreshold()+num);//设定type为1时代表根据查询次数修改数据阈值
+//		double time=(SimClock.getTime()-d.getTime())/60;//时间以分钟为单位，是从数据创建时间到当前时间的差
+//		int times=this.datas.get(d);
+//		num=times/time;
+//		d.setThreshold(d.getThreshold()+num);
+//	}
+//	//周期性的更新filter的阈值
+//	public void updataFilterThresh(){
+//		List<Filter> delf=new ArrayList<Filter>();
+//		List<Filter> addf=new ArrayList<Filter>();
+//		for(Filter f:this.filters){
+//			delf.add(f);
+//			//根据一段时间内的查询次数修改filter阈值，
+//			if(f.getNewTimes()-f.getOldTimes()<5) f.setThreshold(f.getThreshold()+0.2);
+//			else if(f.getNewTimes()-f.getOldTimes()>40) f.setThreshold(f.getThreshold()-0.2);
+//			f.setOldTimes(f.getNewTimes());
+//			if(f.getThreshold()<9 && f.getThreshold()>1) addf.add(f);
+//				
+//		}
+//		this.filters.removeAll(delf);
+//		this.filters.addAll(addf);
+//	}
 	/*
 	 * 将一系列数据存入filtercube中
 	 */
@@ -1423,17 +1420,17 @@ public class DTNHost implements Comparable<DTNHost> {
 	public void setNumOfRepliedQuery(int i){
 		this.numOfRepliedQuery=i;
 	}
-	//根据已有filter新增新的filter的函数
-	public void addFilters(){
-		List<Filter> newFilters=new ArrayList<>();
-		for(Filter f:this.filters){
-			if((f.getNewTimes()-f.getOldTimes())>10||f.getThreshold()<4){
-				Filter nf=f.copyFromFilter(f);
-				if(!nf.isEqual(f)) newFilters.add(nf);
-			}
-		}
-		this.filters.addAll(newFilters);
-	}
+//	//根据已有filter新增新的filter的函数
+//	public void addFilters(){
+//		List<Filter> newFilters=new ArrayList<>();
+//		for(Filter f:this.filters){
+//			if((f.getNewTimes()-f.getOldTimes())>10||f.getThreshold()<4){
+//				Filter nf=f.copyFromFilter(f);
+//				if(!nf.isEqual(f)) newFilters.add(nf);
+//			}
+//		}
+//		this.filters.addAll(newFilters);
+//	}
 
 
 	//创建Request,(随机生成数据地点，利用云端的edge节点)

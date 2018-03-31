@@ -29,8 +29,8 @@ public class JudgeCharamReport extends ContactTimesReport implements
 	/** sim time of last report writing */
 	private double lastWrite;
 	/** last reported time count (to suppress duplicates) */
-	private double lastReportedTime;
-
+	private double lastReportedTime=0;
+	
 	public void init() {
 		super.init();
 		write(HEADER);
@@ -62,20 +62,8 @@ public class JudgeCharamReport extends ContactTimesReport implements
 			return; // shouldn't report yet
 		}
 		lastWrite = simTime;
-
-		// count also the times for connections that are still up
-		double othersTime = 0;
-		for (ConnectionInfo oth : this.connections.values()) {
-			othersTime += oth.getConnectionTime();
-		}
-
-		double totalTime = oldContactTimes + othersTime;
-
-		if (lastReportedTime == totalTime) {
-			return; // don't report duplicate times
-		}
-
+		
+		
 		write(format(simTime) + "\n" + World.getTotalRes());
-		lastReportedTime = totalTime;
 	}
 }

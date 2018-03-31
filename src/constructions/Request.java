@@ -104,14 +104,14 @@ public class Request {
 		this.level=level;
 	}
 	public String toString(){
-		String res="";
-		res=res+new Time(time).toString()+"精度级别"+level+"查询类型"+type;
-		res=res+"\n";
+		StringBuilder res=new StringBuilder("");
+		res.append(new Time(time).toString()).append("精度级别").append(level).append("查询类型")
+			.append(type).append("\n");
 		for(String s:this.dims.keySet()){
-			res=res+s+":"+this.dims.get(s)+",";
+			res=res.append(s).append(":").append(this.dims.get(s)).append(",");
 		}
 				
-		return res;
+		return res.toString();
 	}
 
 	public Map<String,Double> getDims() {

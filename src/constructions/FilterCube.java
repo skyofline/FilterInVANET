@@ -2,6 +2,7 @@ package constructions;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
@@ -85,8 +86,9 @@ public class FilterCube {
     			System.err.println("wrong in there,putData function");
     			
     		}
+    		Values v=this.fc.get(k);
     		//添加数据前根据filter 判断重设数据是否上传状态
-    		for(Filter f:this.fc.get(k).getFilters()){
+    		for(Filter f:v.getFilters()){
     			if(f.judgeData(d)) f.resetDataStatus(d);
     		}
     		if(this.getRestSpaceRate()<this.spaceThreshold){
@@ -95,7 +97,7 @@ public class FilterCube {
     		if(this.getRestSpaceRate()<this.spaceThreshold){
     			this.clearDatas();
     		}
-    		this.fc.get(k).addData(d);
+    		v.addData(d);
     		//添加数据时更新filter cube的剩余空间
     		this.restSpace=this.restSpace-d.getSize();
     		//添加数据后，判断尝试将数据上传
@@ -131,7 +133,8 @@ public class FilterCube {
   		if(k==null) System.err.println("放入数据到cloud中，filter cube放入数据出错,未找到相应key");
     		if(k.inRange(d)){
     			//添加数据前根据filter 判断重设数据是否上传状态
-    			for(Filter f:this.fc.get(k).getFilters()){
+    			Values v=this.fc.get(k);
+    			for(Filter f:v.getFilters()){
     				if(f.judgeData(d)) f.resetDataStatus(d);
     			}
     			if(this.getRestSpaceRate()<this.spaceThreshold){
@@ -140,7 +143,7 @@ public class FilterCube {
     			if(this.getRestSpaceRate()<this.spaceThreshold){
     				this.clearDatas();
     			}
-    			this.fc.get(k).addData(d);
+    			v.addData(d);
     			//添加数据时更新filter cube的剩余空间
     			this.restSpace=this.restSpace-d.getSize();
     			if(d.getExpandState()==0&&d.getUsageCount()==0) this.fc.get(k).getFilters().get(0).addUnusedPassDatas(1);
@@ -184,11 +187,9 @@ public class FilterCube {
 	public void update(){
 		Map<Keys,Values> adds=new LinkedHashMap<Keys,Values>();
 		List<Keys> delKeys =new ArrayList<Keys>();
-		Set<Keys> k=this.fc.keySet();
-		Iterator<Keys> it=k.iterator();
-		while(it.hasNext()){
-			Keys nk=(Keys) it.next();
-			Values v=this.fc.get(nk);
+		for(Entry<Keys, Values> entry:this.fc.entrySet()){
+			Keys nk=entry.getKey();
+			Values v=entry.getValue();
 			Filter f=v.getFilters().get(0);//获取第一个filter
 			//如果filter不是basicFilter,则进行计算判断更新状态或置为basic
 			if(f.getBasicStatus()==0){
@@ -236,7 +237,7 @@ public class FilterCube {
 				    	List<String> l=this.getDimensions();
 				    	for(int i=0;i<len;i++){
 				    		String dim= l.get(i);
-				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
+				    		for(int j=1,maxSplits=FilterCube.getMaxSplits(dim);j<=maxSplits;j++){
 				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
 				    			if(dimSplitFac<min[i]){
 				    				min[i]=dimSplitFac;
@@ -322,7 +323,7 @@ public class FilterCube {
 			    	List<String> l=this.getDimensions();
 			    	for(int i=0;i<len;i++){
 			    		String dim= l.get(i);
-			    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
+			    		for(int j=1,maxSplits=FilterCube.getMaxSplits(dim);j<=maxSplits;j++){
 			    			double dimSplitFac=this.getDimSplitFactor( dim, j);
 			    			if(dimSplitFac<min[i]){
 			    				min[i]=dimSplitFac;
@@ -355,11 +356,9 @@ public class FilterCube {
 	 * 更新filter cube中的每一行数据，判断留存或删除
 	 */
 	public void updateDatas(){
-		Set<Keys>k= this.fc.keySet();
-		Iterator<Keys> it=k.iterator();
-		while(it.hasNext()){
-			Keys nk=(Keys) it.next();
-			Values v=this.fc.get(nk);
+		for(Entry<Keys, Values> entry:this.fc.entrySet()){
+			Keys nk=entry.getKey();
+			Values v=entry.getValue();
 			List<Data> datas=v.getDatas();
 			List<Data> dels=new ArrayList<Data>();
 			double releaseSpace=0;
@@ -393,11 +392,9 @@ public class FilterCube {
 	 * 删除大量数据，当无法删除数据时，增大删除尺度删除大量数据
 	 */
 	public void clearDatas(){
-		Set<Keys>k= this.fc.keySet();
-		Iterator<Keys> it=k.iterator();
-		while(it.hasNext()){
-			Keys nk=(Keys) it.next();
-			Values v=this.fc.get(nk);
+		for(Entry<Keys, Values> entry:this.fc.entrySet()){
+			Keys nk=entry.getKey();
+			Values v=entry.getValue();
 			List<Data> datas=v.getDatas();
 			List<Data> dels=new ArrayList<Data>();
 			double releaseSpace=0;
@@ -493,11 +490,11 @@ public class FilterCube {
   		List<Keys> keyss=this.getKeysByRequest(r);
   		if(keyss.size()==0) System.err.println("未找到相应request的key"+r.toString());
   		for(Keys k:keyss){
-  			Set<Keys> ks=this.fc.keySet();
+//  			Set<Keys> kt=this.fc.keySet();
     		Values v=this.fc.get(k);
-    		Filter f=this.fc.get(k).getFilters().get(0);
+    		Filter f=v.getFilters().get(0);
     		if(f.judgeRequest(r)){
-    			List<Data> s=this.fc.get(k).getDatas();
+    			List<Data> s=v.getDatas();
     			for(Data t:s){
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
@@ -556,7 +553,7 @@ public class FilterCube {
     				    	for(int i=0;i<len;i++){
     				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
     				    		String dim= l.get(i);
-    				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
+    				    		for(int j=1,maxSplits=FilterCube.getMaxSplits(dim);j<=maxSplits;j++){
     				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
     				    			if(dimSplitFac<min[i]){
     				    				min[i]=dimSplitFac;
@@ -603,9 +600,9 @@ public class FilterCube {
   		if(keyss.size()==0) System.err.println("未找到相应request的key"+r.toString());
   		for(Keys k:keyss){
     		Values v=this.fc.get(k);
-    		Filter f=this.fc.get(k).getFilters().get(0);
+    		Filter f=v.getFilters().get(0);
     		if(f.judgeRequest(r)){
-    			List<Data> s=this.fc.get(k).getDatas();
+    			List<Data> s=v.getDatas();
     			for(Data t:s){
     				if(r.judgeData(t)) {
     					t.addUsageCount();//数据添加使用次数
@@ -647,24 +644,17 @@ public class FilterCube {
     						f.setBasicStatus(0);
     					}else{
     						//将filter置为more状态，此时没必要，暂不进行操作
-    						int len=f.getDims().size();
-    						double[] min=new double[len];
-    				    	int[] split=new int[len];
-    				    	for(int i=0;i<len;i++){
-    				    		min[i]=1000000;
-    				    		split[i]=1;
-    				    	}
-    				    	for(int i=0;i<len;i++){
-    				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
-    				    		String dim= l.get(i);
-    				    		for(int j=1;j<=FilterCube.getMaxSplits(dim);j++){
+    				    	for(String dim:f.getDims().keySet()){
+    				    		double min=1000000;
+    				    		int split=1;
+    				    		for(int j=1,maxSplits=FilterCube.getMaxSplits(dim);j<=maxSplits;j++){
     				    			double dimSplitFac=this.getDimSplitFactor( dim, j);
-    				    			if(dimSplitFac<min[i]){
-    				    				min[i]=dimSplitFac;
-    				    				split[i]=j;
+    				    			if(dimSplitFac<min){
+    				    				min=dimSplitFac;
+    				    				split=j;
     				    			}
     				    		}
-    				    		Map<Keys,Values> newss=this.splitDimension(k, dim, split[i]);
+    				    		Map<Keys,Values> newss=this.splitDimension(k, dim, split);
     				    		//如果切分后的filter个数大于一个，即进行切分，则添加新的分片，删除旧的分片
     				    		if(newss.size()>1){
     				    			adds.putAll(newss);
@@ -770,11 +760,10 @@ public class FilterCube {
 	public void addFilter(Filter f){
 		Keys k=this.getKeysByFIlter(f);
   		if(k==null) System.err.println("filter cube添加出错，未找到相应key");
-			if(k.inRange(f)){
-				this.fc.get(k).addFilter(f);
-				this.numOfFilter=this.numOfFilter+1;
-			}
-			
+		if(k.inRange(f)){
+			this.fc.get(k).addFilter(f);
+			this.numOfFilter=this.numOfFilter+1;
+		}
 	}
 	/*
 	 * 计算获取一个维度的最大分片数量
@@ -796,9 +785,7 @@ public class FilterCube {
 		int sum=0;
 		for(int i=0;i<num;i++){
     		int numOfOpen=0,numOfClose=0;
-    		Iterator<Keys> it=this.fc.keySet().iterator();
-    		while(it.hasNext()){
-    			Keys k=(Keys) it.next();
+    		for(Keys k:this.fc.keySet()){
     			if(k.getKey().containsKey(dimension)&&(k.getKey().get(dimension).getMinBord()>=i*aver)
     					&&(k.getKey().get(dimension).getMaxBord()<=(i+1)*aver))
     				if(this.fc.get(k).getStatus()==0) numOfOpen++;
@@ -865,8 +852,8 @@ public class FilterCube {
 	 * 在dimNum中添加新的splits
 	 */
 	public int  putSplits(Splits news){
-		for(Integer i:this.dimNum.get(news.getDimension()).keySet()){
-			if(this.dimNum.get(news.getDimension()).get(i).isEqual(news)) return i;
+		for(Splits s:this.dimNum.get(news.getDimension()).values()){
+			if(s.equals(news)) return -1;
 		}
 		int len=this.dimNum.get(news.getDimension()).size()+1;
 		while(this.dimNum.get(news.getDimension()).containsKey(len)) len++;
@@ -1003,12 +990,14 @@ public class FilterCube {
 	public Keys getKeysByData(Data d){
 		Keys k=null;
 		List<Integer> keyNumList = new ArrayList<Integer>();
+		List<Integer> num=new ArrayList<Integer>();
+		List<Integer> temp=new ArrayList<Integer>();
 		for(String s:d.getDimensions().keySet()){
-			List<Integer> num=this.getDimNum(s, d.getDimensions().get(s));
+			num=this.getDimNum(s, d.getDimensions().get(s));
 			if(keyNumList.size()==0){
 				keyNumList=num;
 			}else{
-				List<Integer> temp=new ArrayList<Integer>();
+				temp.clear();
 				for(int i:keyNumList){
 					for(int j:num){
 						int t=i*j;
@@ -1017,7 +1006,8 @@ public class FilterCube {
 						}
 					}
 				}
-				keyNumList=temp;
+				keyNumList.clear();
+				keyNumList.addAll(temp);
 			}
 		}
 		Keys resK=null;
@@ -1068,15 +1058,15 @@ public class FilterCube {
 		return res;
 	}
 	public String dimNumString(){
-		String res="";
+		StringBuilder res=new StringBuilder("");
 		for(String s:this.dimNum.keySet()){
-			res=res+s+"\n";
+			res.append(s).append("\n");
 			for(int i:this.dimNum.get(s).keySet()){
-				res=res+i+":"+this.dimNum.get(s).get(i).toString()+",";
+				res.append(i).append(":").append(this.dimNum.get(s).get(i).toString()).append(",");
 			}
-			res=res+"\n";
+			res.append("\n");
 		}
-		return res;
+		return res.toString();
 	}
 	public Map<Keys,Values> getFc() {
 		return fc;

@@ -177,9 +177,10 @@ public class World {
 		
 		
 		/* inform all update listeners */
-		for (UpdateListener ul : this.updateListeners) {
-			ul.updated(this.hosts);
-		}
+		if(SimClock.getIntTime()%600>1&&SimClock.getIntTime()%600<5)
+			for (UpdateListener ul : this.updateListeners) {
+				ul.updated(this.hosts);
+			}
 	}
 
 	/**
@@ -291,11 +292,12 @@ public class World {
 	}
 	
 	public static String getTotalRes(){
+		StringBuilder res=new StringBuilder("");
 		//首先展示RSU
-		String res=""+MessageCenter.showRestSpaceRateOfRSU()+",";
-		res=res+MessageCenter.showReplyRateOfRSU()+",";
-		res=res+MessageCenter.showReplyByLocalRateOfRSU()+",";
-		res=res+MessageCenter.showAverTimeOfRSU()+",";
+		res.append(MessageCenter.showRestSpaceRateOfRSU()+","
+			+MessageCenter.showReplyRateOfRSU()+","
+			+MessageCenter.showReplyByLocalRateOfRSU()+","
+			+MessageCenter.showAverTimeOfRSU()+",");
 //		for(DTNHost s:SimScenario.getInstance().hosts){
 //			if(s.getType()==0 &&s.getAverTime()>400){
 //				s.showAver();
@@ -304,13 +306,13 @@ public class World {
 //		}
 		//然后展示车辆
 		
-		res=res+MessageCenter.showReplyRateOfCar()+",";
-		res=res+MessageCenter.showAverTimeOfCar()+",";
+		res.append(MessageCenter.showReplyRateOfCar()+","
+			+MessageCenter.showAverTimeOfCar()+",");
 		
 		//再后展示Cloud端
-		res=res+MessageCenter.showReplyByLocalRateOfCloud()+",";
-		res=res+MessageCenter.showRestSpaceRateOfCloud()+",";
-		res=res+MessageCenter.showAverTimeOfCloud()+"\n";
+		res.append(MessageCenter.showReplyByLocalRateOfCloud()+","
+			+MessageCenter.showRestSpaceRateOfCloud()+","
+			+MessageCenter.showAverTimeOfCloud()+"\n");
 
 		int allFailedMessages=0;
 		int allWaitMessages=0;
@@ -331,7 +333,7 @@ public class World {
 		
 		//最后展示一些实验参数,首先重新计算成功查询的比例，然后再依次展示
 		MessageCenter.calReplyRate();
-		res=res+"总的消息量为："+MessageCenter.querys+","+"数据向上推送的数量为："+MessageCenter.pushUpDatas
+		res.append("总的消息量为："+MessageCenter.querys+","+"数据向上推送的数量为："+MessageCenter.pushUpDatas
 				+",数据向下拉取的数量为："+MessageCenter.pullDownDatas
 				+",成功查询的比例为："+MessageCenter.repliedQueryRate
 				+",车辆发出的查询数量为："+MessageCenter.querys
@@ -340,9 +342,9 @@ public class World {
 				+",仍然在车辆中等待数据回复的数量为："+allWaitMessages
 				+",进行filter cube更新所花费的平均时间为："+MessageCenter.filterCubeUpdateTime/MessageCenter.filterCubeUpdates
 				+",进行filter cube更新的次数为："+MessageCenter.filterCubeUpdates
-				+",被切分的filter的个数为："+MessageCenter.splitedFilters;
+				+",被切分的filter的个数为："+MessageCenter.splitedFilters);
 
-		res=res+"\n====================="+SimClock.getTime()+"=============================\n";
-		return res;
+		res.append("\n====================="+SimClock.getTime()+"=============================\n");
+		return res.toString();
 	}
 }

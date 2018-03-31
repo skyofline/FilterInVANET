@@ -171,14 +171,13 @@ public class Data {
 	}
 	
 	public String toString(){
-		String res="";
-		res=res+" 数据来自于"+this.id
-				+",数据格式为："+this.type+" ,数据大小为："+this.size
-				+"数据内容为："+this.content;
+		StringBuilder res=new StringBuilder("数据来自于");
+		res.append(this.id).append(",数据格式为：").append(this.type).append(" ,数据大小为：")
+			.append(this.size).append("数据内容为：").append(this.content);
 		for(String dim:this.dims.keySet()){
-			res=res+dim+":"+this.dims.get(dim)+",";
+			res=res.append(dim).append(":").append(this.dims.get(dim)).append(",");
 		}
-		return res;
+		return res.toString();
 	}
 	/*
 	 * 判断两条数据是否是一致的数据

@@ -7,9 +7,9 @@ import java.util.List;
 public class Values{
 	//该状态是
 	private int status=0;
-	private List<Filter> filters=new ArrayList<Filter>();;
-	private List<Data> datas=new ArrayList<Data>();
-	private List<Request> requests=new ArrayList<Request>();
+	private List<Filter> filters=new ArrayList<Filter>();
+	private List<Data> datas=new ArrayList<Data>(10000);
+	private List<Request> requests=new ArrayList<Request>(1000);
 	private int splits=0;
 	public Values(Values v){
 		this.status=v.getStatus();
@@ -22,8 +22,7 @@ public class Values{
 	 * 清空values中的数据
 	 */
 	public void clearAllDatas(){
-		List<Data> emptyDatas=new ArrayList<Data>();
-		this.datas=emptyDatas;
+		this.datas.clear();
 	}
 	/*
 	 * 向该value添加filter
@@ -74,9 +73,7 @@ public class Values{
 	}
 	public void clearAllRequests() {
 		// TODO Auto-generated method stub
-		@SuppressWarnings("unused")
-		List<Request> emptyRequests=new ArrayList<Request>();
-		this.requests=emptyRequests;
+		this.requests.clear();
 	}
 	public void changeDimensionValue(String dimension, double minV, double maxV) {
 		// TODO Auto-generated method stub

@@ -82,7 +82,7 @@ public class Filter {
 		String res="";
 		res=res+"filter的维度：\n";
 		for(String s:this.dims.keySet()){
-			res=res+ this.dims.get(s).toString()+"\n";
+			res=res+this.dims.get(s).toString()+"\n";
 		}
 		return res;
 	}
@@ -145,20 +145,11 @@ public class Filter {
 		Set<String> l=req.keySet();
 		/*
 		* 判断数据的维度是否都存在与filter维度中
+		* 判断数据的维度值都在filter的对应维度值的区间之内
 		*/
 		int sign=0;//sign为1时表示数据有的维度不从属于filter中
 		for(String s:l){
-			if(!this.getDims().containsKey(s)){
-				sign=1;
-				break;
-			}
-		}
-		if(sign==1) return false;
-		/*
-		* 判断数据的维度值都在filter的对应维度值的区间之内
-		*/
-		for(String s:l){
-			if(!this.getDims().get(s).inRange(req.get(s))){
+			if((!this.getDims().containsKey(s))||(!this.getDims().get(s).inRange(req.get(s)))){
 				sign=1;
 				break;
 			}
