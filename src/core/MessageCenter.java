@@ -260,6 +260,6 @@ public class MessageCenter {
   
     //为娱乐请求生成数据
     public static Data generDataForEnterQuery(Request q,int id){
-    	return new Data(q.getTime(),id,q.getType(),q.getLevel(),"娱乐",q.getLocation());
+    	return new Data(q.getTime(),id,q.getType(),q.getLevel(),q.getLocation());
     }
 }

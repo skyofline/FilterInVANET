@@ -15,130 +15,101 @@ public class Data {
 	//数据格式,共有5种（视频0、图像1、车辆状态2、驾驶员行为3、人工标记4）
 	private int type;
 	private double size;//数据大小
-	private String content;//数据内容
 	private Coord location;//数据产生地点
 	private int level;//数据精度等级
 	private double threshold=2.5;//数据阈值
 	private Map<String,Double> dims=new LinkedHashMap<String, Double>();
 	private int usageCount=0;//数据被request接纳的次数
 	private int expandState=0;//数据能否通过filter的状态表示，pass:0,close:1
-	public Data(double t,int i,int ty,int l,String c,Coord loca){
+	public Data(double t,int i,int ty,int l,Coord loca){
 		this.time=t;
 		this.id=i;
 		this.type=ty;
 		this.level=l;
-		this.content=c;
 		this.location=loca;
 		this.size=0;
 	}
 	public void fillData(){
 		if(type==0){
-			Random r=new Random(System.currentTimeMillis());
 			//随机生成视频时间长度（5-15分钟范围）
-			double lenOfTime=r.nextDouble();
-			if(lenOfTime<0)lenOfTime=0-lenOfTime;
-			lenOfTime=lenOfTime*10+5;
-			lenOfTime=lenOfTime*60;
-			this.dims.put("Duration", lenOfTime);
+			double lenOfTime=60*(Math.random()*10+5);
+			this.dims.put("Duration",lenOfTime );
 			//随机生成情境，车祸0/正常1,万分之5的概率车祸
-			int situation=r.nextInt(10000);
-			if(situation<5) situation=0;
+			double situation=Math.random();
+			if(situation<0.0005) situation=0;
 			else situation=1;
-			this.dims.put("Situation", (double)situation);
-			int traSitua=r.nextInt(200);
+			this.dims.put("Situation", situation);
+			double traSitua=Math.random();
 			//随机生成交通情况，良好0/一般1/拥堵2
-			if(traSitua<60) traSitua=0;
-			else if(traSitua<195) traSitua=1;
+			if(traSitua<0.35) traSitua=0;
+			else if(traSitua<0.85) traSitua=1;
 			else traSitua=2;
-			this.dims.put("TrafficCondition", (double)traSitua);
-			long seed=System.currentTimeMillis();
+			this.dims.put("TrafficCondition", traSitua);
 			//根据随机生成的视频时长来生成视频大小
 			//暂时假设1秒钟有51.5KB大小
-			double sizes=51.5*lenOfTime;
-			
-			this.size=sizes;
+			this.size=51.5*lenOfTime;
 			this.dims.put("Size",this.size);
 		}else if(type==1){
-			Random r=new Random(System.currentTimeMillis());
 			//随机生成天气状况，晴天0/阴天1/降雨2
-			int i=r.nextInt(100);
-			double weather=0;
-			if(i<90) weather=0;
-			else if(i<95) weather=1;
+			double weather=Math.random();
+			if(weather<0.75) weather=0;
+			else if(weather<0.9) weather=1;
 			else weather=2;
 			this.dims.put("Weather", weather);
 			//根据当前时间生成时间段,早晨0/上午1/中午2/下午3/晚上4
-			double ntime=SimClock.getTime();
-			int hour=(int) (ntime/3600);
+			double hour=SimClock.getTime()/3600;
 			if(hour<7) hour=0;
 			else if(hour<12) hour=1;
 			else if(hour<14) hour=2;
 			else if(hour<18) hour=3;
 			else hour=4;
 			
-			this.dims.put("Time", (double)hour);
+			this.dims.put("Time",hour);
 			//随机生成交通状况,良好0/一般1/拥堵2
-			int trafficSitu=r.nextInt(200);
-			if(trafficSitu<60) trafficSitu=0;
-			else if(trafficSitu<195) trafficSitu=1;
+			double trafficSitu=Math.random();
+			if(trafficSitu<0.3) trafficSitu=0;
+			else if(trafficSitu<0.9) trafficSitu=1;
 			else trafficSitu=2;
-			this.dims.put("TrafficCondition",(double)trafficSitu);
+			this.dims.put("TrafficCondition",trafficSitu);
 			//使用随机数据生成图像大小
-			double sizes=r.nextDouble();
-			if(sizes<0) sizes=0-sizes;
-			if(sizes<0.2) sizes=sizes+0.3;
-			else if(sizes<0.5) sizes=sizes;
-			else sizes=sizes*2;
-			this.size=sizes*1024;
+			this.size=Math.random();
+			if(this.size<0.2) this.size+=0.3;
+			else if(this.size>=0.5) this.size*=2;
+			this.size*=1024;
 			this.dims.put("Size",this.size);
 
 		}else if(type==2){
 		
-			Random r=new Random(System.currentTimeMillis());
 			//随机数随机生成车辆状态,良好0/较差1
-			int states=r.nextInt(400);
-			if(states<396) states=0;
+			double states=Math.random(); 
+			if(states<0.95) states=0;
 			else states=1;
-			this.dims.put("VehicleStatus", (double)states);
+			this.dims.put("VehicleStatus",states);
 			//暂时随机生成车速
-			int speeds=r.nextInt(50);
-			this.dims.put("VehicleSpeed", (double)speeds);
+			this.dims.put("VehicleSpeed", Math.random()*90);
 			//随机生成数据大小（25KB-125KB)
-			int sizes=r.nextInt(100)+25;
-			this.size=sizes;
+			this.size=Math.random()*100+25;
 			this.dims.put("Size",this.size);
 
 		}else if(type==3){
-			Random r=new Random(System.currentTimeMillis());
 			//随机生成方向盘转角
-			double angles=r.nextDouble();
-			angles=angles*180;
-			this.dims.put("SteeringWheelAngle", angles);
+			this.dims.put("SteeringWheelAngle",Math.random()*180);
 			//随机生成加油门程度
-			r=new Random((long)SimClock.getTime());
-			double degree=r.nextDouble();
-			if(degree<0) degree=0-degree;
-			this.dims.put("GasPedal", degree);
+			this.dims.put("GasPedal", Math.random());
 			//随机生成数据大小(10-25KB)
-			int sizes=r.nextInt(15)+10;
-			this.size=sizes;
+			this.size=Math.random()*15+10;
 			this.dims.put("Size",this.size);
 
 		}else if(type==4){
-			Random r=new Random(System.currentTimeMillis());
 			//随机生成汽车拍摄图片中的车辆数(0-9辆)
-			int nums=r.nextInt(10);
-			this.dims.put("NumOfVehicles",(double)nums);
+			this.dims.put("NumOfVehicles",(double)((int)Math.random()*10));
 			//随机生成车道线位置（偏左0，中间1，偏右2）
-			int position=r.nextInt(3);
-			this.dims.put("LanePosition", (double)position);
+			this.dims.put("LanePosition", (double)((int)Math.random()*3));
 			//随机生成包含图片数据大小
-			double sizes=r.nextDouble();
-			if(sizes<0) sizes=0-sizes;
-			if(sizes<0.2) sizes=sizes+0.3;
-			else if(sizes<0.5) sizes=sizes;
-			else sizes=sizes*2;
-			this.size=sizes*1024;
+			this.size=Math.random();
+			if(this.size<0.2) this.size+=0.3;
+			else if(this.size>=0.5)this.size*=2;
+			this.size*=1024;
 			this.dims.put("Size",this.size);
 
 		}
@@ -173,7 +144,7 @@ public class Data {
 	public String toString(){
 		StringBuilder res=new StringBuilder("数据来自于");
 		res.append(this.id).append(",数据格式为：").append(this.type).append(" ,数据大小为：")
-			.append(this.size).append("数据内容为：").append(this.content);
+			.append(this.size);
 		for(String dim:this.dims.keySet()){
 			res=res.append(dim).append(":").append(this.dims.get(dim)).append(",");
 		}
@@ -251,12 +222,7 @@ public class Data {
 	public void setSize(double size) {
 		this.size = size;
 	}
-	public String getContent() {
-		return content;
-	}
-	public void setContent(String content) {
-		this.content = content;
-	}
+
 	public double getThreshold() {
 		return threshold;
 	}

@@ -126,9 +126,17 @@ public class Cloud {
     	else return (double)this.numOfRepliedImmidia/this.numOfRepliedQuery;
     }
     /*
-     * 创建原始filter cube,这里暂时使用类别号为1 的类别
+     * 创建原始filter cube
      */
     public void createOrginFilterCube(){
+    	//对filtercubee的建立过程
+    	Filter orginFilter0=new Filter(0
+    			,this.location,0,0);
+    	orginFilter0.addDimension("Duration",300,900);
+    	orginFilter0.addDimension("Situation",0,1);
+    	orginFilter0.addDimension("TrafficCondition",0,2);
+    	orginFilter0.addDimension("Size",51.5*300,51.5*900);
+    	
     	Filter orginFilter1=new Filter(1
     			,this.location,0,0);
     	orginFilter1.addDimension("Weather",0,2);
@@ -137,27 +145,21 @@ public class Cloud {
     	orginFilter1.addDimension("Size",0.2*1024,2*1024);
 //    	System.out.println(orginFilter.toString());
     	
-    	//对原始filter cube进行切分以完成Filter Cube的建立过程
-    	Filter orginFilter0=new Filter(1
-    			,this.location,0,0);
-    	orginFilter0.addDimension("Duration",300,900);
-    	orginFilter0.addDimension("Situation",0,1);
-    	orginFilter0.addDimension("TrafficCondition",0,2);
-    	orginFilter0.addDimension("Size",51.5*300,51.5*900);
     	
-    	Filter orginFilter2=new Filter(1
+    	
+    	Filter orginFilter2=new Filter(2
     			,this.location,0,0);
     	orginFilter2.addDimension("VehicleStatus",0,1);
-    	orginFilter2.addDimension("VehicleSpeed",0,49);
+    	orginFilter2.addDimension("VehicleSpeed",0,90);
     	orginFilter2.addDimension("Size",25,125);
     	
-    	Filter orginFilter3=new Filter(1
+    	Filter orginFilter3=new Filter(3
     			,this.location,0,0);
     	orginFilter3.addDimension("SteeringWheelAngle",0,180);
     	orginFilter3.addDimension("GasPedal",0,1);
     	orginFilter3.addDimension("Size",10,25);
     	
-    	Filter orginFilter4=new Filter(1
+    	Filter orginFilter4=new Filter(4
     			,this.location,0,0);
     	orginFilter4.addDimension("NumOfVehicles",0,9);
     	orginFilter4.addDimension("LanePosition",0,2);

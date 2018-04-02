@@ -80,7 +80,7 @@ public class FilterCube {
 //    	System.out.println(dtn.getName()+"中的filter cube的层级数："+ks.size());
 //  		System.out.println(d.toString());
   		Keys k=this.getKeysByData(d);
-  		if(k==null) System.err.println("filter cube放入数据到DTNHost出错，未找到相应key");
+  		if(k==null) System.err.println("filter cube放入数据到DTNHost出错，未找到相应key"+"\n"+d.toString());
     	if(k.inRange(d)){
     		if(!this.fc.containsKey(k)){
     			System.err.println("wrong in there,putData function");
@@ -369,7 +369,7 @@ public class FilterCube {
 				 * 这里暂时使用数据时间和数据使用次数作为删除数据的依据
 				 */
 				
-				if((SimClock.getTime()-d.getTime()>5400&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>7200&&d.getUsageCount()<5)){
+				if((SimClock.getTime()-d.getTime()>1800&&d.getExpandState()==0)||(SimClock.getTime()-d.getTime()>3600&&d.getUsageCount()<5)){
 					dels.add(d);
 					releaseSpace=releaseSpace+d.getSize();
 					delNum=delNum+1;
@@ -377,7 +377,7 @@ public class FilterCube {
 					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
-				if(delNum/sum>0.1) break;
+				if(delNum/sum>0.4) break;
 			}
 			if(dels.size()>0){
 				datas.removeAll(dels);
@@ -413,8 +413,7 @@ public class FilterCube {
 					if(d.getExpandState()==0&&d.getUsageCount()==0) v.getFilters().get(0).addUnusedPassDatas(-1);
 					if(d.getExpandState()==1&&d.getUsageCount()>0) v.getFilters().get(0).addUsedBlockDatas(-1);
 				}
-				
-				if(delNum/sum>0.1) break;
+				if(delNum/sum>0.4) break;
 				/*
 				 * 进行数据整合的代码
 				 */
@@ -550,8 +549,9 @@ public class FilterCube {
     				    		min[i]=1000000;
     				    		split[i]=1;
     				    	}
+    				    	List<String> l=new ArrayList<String>(f.getDims().keySet());
     				    	for(int i=0;i<len;i++){
-    				    		List<String> l=new ArrayList<String>(f.getDims().keySet());
+    				    		
     				    		String dim= l.get(i);
     				    		for(int j=1,maxSplits=FilterCube.getMaxSplits(dim);j<=maxSplits;j++){
     				    			double dimSplitFac=this.getDimSplitFactor( dim, j);

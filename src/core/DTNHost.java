@@ -134,7 +134,7 @@ public class DTNHost implements Comparable<DTNHost> {
     	Filter orginFilter2=new Filter(2
     			,this.location,0,0);
     	orginFilter2.addDimension("VehicleStatus",0,1);
-    	orginFilter2.addDimension("VehicleSpeed",0,49);
+    	orginFilter2.addDimension("VehicleSpeed",0,90);
     	orginFilter2.addDimension("Size",25,125);
     	
     	Filter orginFilter3=new Filter(3
@@ -252,16 +252,14 @@ public class DTNHost implements Comparable<DTNHost> {
     	if(type<0) type=0;
     	if(type>4) type=4;
     	int level=r.nextInt(2);
-    	String content="null";
-    	Data d=new Data(SimClock.getTime(),this.address,type,level,content,this.location);
+    	Data d=new Data(SimClock.getTime(),this.address,type,level,this.location);
     	d.fillData();
     	//当数据产生后，可将数据加入到filter cube中
     	this.filterCubes.get(type).putData(d,this); 
     	if(this.getType()==DTNHost.CAR_TYPE)this.uploadDataToEdge(d);
     }
 	public Data collectDataForRequest(Request r){
-		String content=null;
-		Data d=new Data(SimClock.getTime(),this.address,r.getType(),r.getLevel(),content,this.location);
+		Data d=new Data(SimClock.getTime(),this.address,r.getType(),r.getLevel(),this.location);
 		d.fillData();
 		return d;
 	}
@@ -685,23 +683,23 @@ public class DTNHost implements Comparable<DTNHost> {
 		}
 		this.router.update();		
 		//如果是车辆节点，则采集数据，按照一定时间
-		if(this.time%180==1){
+		if(this.time%300==1){
 			if(this.type==0) {
 				this.collectData();
 				
 			}
 		}
-		if(this.time%450==1)
-		{
-			if(this.type==DTNHost.RSU_TYPE){
-				this.collectData();
-			}
-		}
+//		if(this.time%600==1)
+//		{
+//			if(this.type==DTNHost.RSU_TYPE){
+//				this.collectData();
+//			}
+//		}
 		 
-		for(Integer types:this.filterCubes.keySet()){
+		for(FilterCube fc:this.filterCubes.values()){
 			//判断filter cube中的数据量是否过多，若是，则进行修改删除
-			if((double)this.filterCubes.get(types).getRestSpace()/this.filterCubes.get(types).fullSpace<this.filterCubes.get(types).getSpaceThreshold()){
-				this.filterCubes.get(types).updateDatas();
+			if((double)fc.getRestSpace()/fc.fullSpace<fc.getSpaceThreshold()){
+				fc.updateDatas();
 			}
 			
     	}
