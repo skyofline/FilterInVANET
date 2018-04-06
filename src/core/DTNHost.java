@@ -292,11 +292,10 @@ public class DTNHost implements Comparable<DTNHost> {
     		DTNHost dtn=(DTNHost) it.next();
     		if(dtn.getType()==1&&d.getLocation().distance(dtn.getLocation())<MessageCenter.dis){
     			/*
-    			 * 创建消息发送数据
+    			 * 上传数据
     			 */
-    			Message m=new Message(this,dtn,"data"+this.getAddress()+SimClock.getTime(),(int)d.getSize(),Message.Data_Transfer_Type);
-    			m.addProperty("Data", d);
-    			this.createNewMessage(m);
+    			dtn.receiveDataFromCar(d);
+    			MessageCenter.pushUpDatas=MessageCenter.pushUpDatas+1;
     		}
     	}
     	//计量数据向上推送数量
@@ -1042,7 +1041,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		m.setReceiveQueryTime(SimClock.getTime());
 		//创建一条查询
 		Request q=this.createNewRequest();
-		q.setTime(SimClock.getTime()+MessageCenter.okTime);
+		q.setTime(SimClock.getTime()+MessageCenter.okTime/2);
 		q.setLocation(c);
 		m.addProperty("Query", q);
 		
@@ -1285,6 +1284,32 @@ public class DTNHost implements Comparable<DTNHost> {
     			d=(Data) m.getProperty(s);
     		}
     	}
+    	if(d!=null){
+    		this.filterCubes.get(d.getType()).putData(d,this);
+    		List<Message> dels=new ArrayList<Message>();
+			for(Message mt:this.waitDataMessages){
+				Request r=(Request) mt.getProperty("Query");
+				if(r.judgeData(d)){
+					if(mt.getTo().getAddress()==this.getAddress()){
+//						this.filterCubes.get(r.getType()).putData(d,this);
+						Message ret=new Message(mt.getTo(), mt.getFrom(), "Reply"+mt.getId(), 1024*100,Message.Reply_Type);
+						ret.addProperty("Data"+0+System.currentTimeMillis(), d);
+						ret.setSize((int)d.getSize());	
+						this.createNewMessage(ret); 
+						this.numOfRepliedQuery++;			
+						logger.info(mt.getTo().name+"成功回复了来自"+mt.getFrom().name+"的查询******************************");
+						dels.add(mt);
+					}else{
+						Cloud.getInstance().workOnWaitMessage(d);
+						dels.add(mt);
+					}
+				}
+				this.filterCubes.get(r.getType()).putRequest(r);
+			}
+			this.waitDataMessages.remove(dels);
+    	}
+    }
+    public void receiveDataFromCar(Data d){
     	if(d!=null){
     		this.filterCubes.get(d.getType()).putData(d,this);
     		List<Message> dels=new ArrayList<Message>();

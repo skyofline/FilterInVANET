@@ -177,7 +177,6 @@ public class World {
 		
 		
 		/* inform all update listeners */
-		if(SimClock.getIntTime()%600>1&&SimClock.getIntTime()%600<5)
 			for (UpdateListener ul : this.updateListeners) {
 				ul.updated(this.hosts);
 			}

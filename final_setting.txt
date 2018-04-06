@@ -5,8 +5,8 @@
 Scenario.name = default_scenario
 Scenario.simulateConnections = true
 Scenario.updateInterval = 0.1
-# 43200s == 12h
-Scenario.endTime = 43200
+# 86400s == 24h
+Scenario.endTime = 86400
 
 ## Interface-specific settings:
 # type : which interface class the interface belongs to
